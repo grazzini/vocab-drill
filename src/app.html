@@ -1,0 +1,1770 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Vocab Drill</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;1,400&family=Klee+One:wght@400;600&family=Noto+Sans+JP:wght@400&family=Shippori+Mincho:wght@400&family=Reggae+One&family=Yuji+Boku&family=Zen+Maru+Gothic:wght@400&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #f6f3ec; --ink: #211d18; --dim: #8a8276; --line: #dcd5c8; --tint: #ebe5d8; --rowOpen: #dbd2bf;
+  --accent: #a4412d; --good: #4d6b4f;
+  --en: "EB Garamond", Georgia, serif;
+  --ja: "Klee One", "YuKyokasho", "Hiragino Mincho ProN", "Yu Mincho", serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #15130f; --ink: #e9e3d6; --dim: #80796d; --line: #322e27; --tint: #24211b; --rowOpen: #1b1914;
+    --accent: #dc8b70; --good: #93b295;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #15130f; --ink: #e9e3d6; --dim: #80796d; --line: #322e27; --tint: #24211b; --rowOpen: #1b1914;
+  --accent: #dc8b70; --good: #93b295;
+}
+:root[data-font="mincho"] { --ja: "Shippori Mincho", "Hiragino Mincho ProN", "Yu Mincho", serif; }
+:root[data-font="gothic"] { --ja: "Noto Sans JP", "Hiragino Sans", "Yu Gothic", sans-serif; }
+:root[data-font="rounded"] { --ja: "Zen Maru Gothic", "Hiragino Maru Gothic ProN", sans-serif; }
+:root[data-font="edomoji"] { --ja: "Reggae One", "Hiragino Mincho ProN", serif; }
+:root[data-font="calligraphy"] { --ja: "Yuji Boku", "Hiragino Mincho ProN", serif; }
+:root { --fit5: calc((100vw - 32px) / 5); }   /* five full-width characters inside the gutters */
+* { box-sizing: border-box; }
+html, body { margin: 0; min-height: 100%; }
+html { -webkit-text-size-adjust: 100%; overscroll-behavior-y: none; }   /* no pull-to-refresh mid-swipe */
+body {
+  background: var(--bg); color: var(--ink);
+  font: 400 1.15rem/1.5 var(--en), var(--ja);
+  -webkit-font-smoothing: antialiased;
+  touch-action: manipulation;   /* no double-tap zoom, no tap delay */
+}
+a, button { color: inherit; font: inherit; }
+button { background: none; border: 0; cursor: pointer; padding: 0; }
+button:focus-visible, a:focus-visible, input:focus-visible { outline: 1px solid var(--accent); outline-offset: 3px; }
+
+header {
+  position: fixed; inset: 0 0 auto 0; z-index: 2;
+  display: flex; justify-content: space-between; align-items: baseline;
+  padding: max(18px, env(safe-area-inset-top)) max(24px, env(safe-area-inset-right)) 18px max(24px, env(safe-area-inset-left));
+  color: var(--dim); font-size: 1rem;
+}
+#label { transition: opacity .3s; }
+#count { color: var(--ink); text-decoration: none; font-variant-numeric: lining-nums tabular-nums; }
+#count.past { color: var(--dim); }
+#skipped { color: var(--dim); margin-right: 14px; }
+#skipped:empty { display: none; }
+footer {
+  position: fixed; inset: auto 0 0 0; display: flex; justify-content: center; gap: 22px;
+  padding: 16px 16px max(16px, env(safe-area-inset-bottom)); color: var(--dim); font-size: .95rem; transition: opacity .3s; flex-wrap: wrap;
+}
+#syncBtn.err { color: var(--accent); }
+.touchOnly { display: none; }
+footer button:hover { color: var(--ink); }
+body.weekList footer { display: none; }
+#explain {
+  position: fixed; left: 50%; bottom: 64px; transform: translateX(-50%); z-index: 3;
+  width: min(640px, calc(100vw - 32px)); max-height: 45vh; overflow-y: auto;
+  padding: 14px 18px; background: var(--tint); border: 1px solid var(--line); border-radius: 8px;
+  color: var(--ink); font-size: 1.05rem; line-height: 1.5; white-space: pre-wrap;
+}
+#explain .q { font-family: var(--ja); color: var(--dim); margin-bottom: 6px; white-space: normal; }
+#explain .q b { color: var(--accent); font-weight: normal; }
+#explain .err { color: var(--accent); }
+
+main {
+  min-height: 100vh; min-height: 100dvh;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  padding: 72px 16px 72px; text-align: center;
+}
+.hero { font-family: var(--ja); font-weight: 400; line-height: 1.35; font-size: min(clamp(4.1rem, 15.6vw, 9rem), var(--fit5)); overflow-wrap: anywhere; }
+.hero:not(.long):not(.en):not(.sentence) { white-space: nowrap; }
+.hero.long { font-size: clamp(2.9rem, 9.6vw, 5.8rem); }
+.hero.en { font-family: var(--en); font-size: clamp(2.6rem, 7.8vw, 5rem); line-height: 1.2; }
+.hero.sentence { font-size: clamp(2rem, 5.5vw, 3.6rem); line-height: 2; max-width: 22em; }
+rt { font-size: .42em; color: var(--dim); font-weight: 400; }
+.hero rt { font-size: .24em; }
+.hero.sentence rt { font-size: max(.32em, 11px); }
+.nofuri rt { visibility: hidden; }
+/* AnimCJK sits over the invisible font glyph, so swapping it in never moves the layout. */
+.strokeChar { position: relative; }
+.strokeChar.drawing { color: transparent; }
+.strokeChar svg { position: absolute; left: 0; top: 50%; width: 1em; height: 1em; transform: translateY(-50%); pointer-events: none; }
+@keyframes zk { to { stroke-dashoffset: 0; } }
+svg.acjk path[id] { fill: var(--line); }
+.more svg.acjk path[id] { fill: color-mix(in srgb, var(--ink) 18%, var(--tint)); }
+svg.acjk.still path[id], .more svg.acjk.still path[id] { fill: var(--ink); }
+svg.acjk.still path[clip-path] { display: none; }
+svg.acjk path[clip-path] {
+  animation: zk var(--t) linear forwards var(--d);
+  stroke-dasharray: 3337; stroke-dashoffset: 3339; stroke-width: 128;
+  stroke-linecap: round; fill: none; stroke: var(--ink);
+}
+.heat { margin: 0 12px 30px; }
+.heat .scroller { overflow-x: auto; }
+.heat .grid { display: grid; grid-template-rows: auto repeat(7, 28px); grid-auto-columns: 28px; gap: 3px; width: max-content; padding: 2px; }
+.heat .month { grid-row: 1; font-size: .8rem; color: var(--dim); white-space: nowrap; line-height: 1.5; }
+.heat .cell { border-radius: 3px; background: color-mix(in srgb, var(--line) 55%, var(--bg)); }
+.heat .grid .cell { display: flex; align-items: center; justify-content: center; font-size: .78rem; font-variant-numeric: lining-nums; color: var(--dim); }
+.heat .cell.future { background: none; opacity: .55; }
+.heat .cell[data-level] { background: color-mix(in srgb, var(--accent) calc(var(--level) * 25%), var(--bg)); }
+.heat .grid .cell[data-level] { color: var(--ink); }
+.heat .grid .cell[data-level="3"], .heat .grid .cell[data-level="4"] { color: var(--bg); }
+.heat .cell.today { outline: 1px solid var(--ink); outline-offset: 1px; }
+.heat .key { display: flex; justify-content: space-between; gap: 16px; color: var(--dim); font-size: .95rem; margin-top: 8px; min-height: 1.5em; flex-wrap: wrap; }
+.heat .scale { display: inline-flex; align-items: center; gap: 3px; }
+.heat .scale .cell { width: 11px; height: 11px; }
+.weeknav { display: flex; align-items: baseline; gap: 16px; margin: 0 0 18px 12px; }
+.weeknav h1 { margin: 0; min-width: 8.5em; }
+.weeknav button { color: var(--dim); padding: 0 6px; }
+.weeknav button:hover:not(:disabled) { color: var(--ink); }
+.weeknav button:disabled { opacity: .3; cursor: default; }
+.credit { color: var(--dim); font-size: .85rem; margin-top: 28px; }
+#strokeBtn.on, #voiceBtn.on { color: var(--ink); }
+mark { background: none; color: var(--accent); }
+.answer { min-height: 6.5rem; margin-top: 18px; }
+.reading { font-family: var(--ja); font-size: 1.5rem; }
+.gloss { font-size: 1.35rem; max-width: 34em; }
+.trans { color: var(--dim); font-style: italic; }
+a.src { color: var(--dim); opacity: .6; font-style: normal; font-size: .8em; text-decoration: none; margin-left: 4px; }
+a.src:hover { opacity: 1; color: var(--ink); }
+.note { color: var(--dim); font-size: .95rem; min-height: 1.5em; margin-top: 8px; }
+.actions { display: flex; flex-wrap: wrap; gap: 12px 32px; justify-content: center; margin-top: 22px; min-height: 2.6rem; }
+.act { padding: 6px 2px; border-bottom: 1px solid var(--line); }
+.act:hover { border-color: var(--ink); }
+.act kbd { font: inherit; color: var(--dim); font-size: .85em; margin-left: 6px; }
+.choices { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; width: min(560px, 100%); margin-top: 34px; }
+.choice { font-family: var(--ja); font-size: clamp(1.3rem, 4vw, 1.8rem); padding: 14px 8px; border: 1px solid var(--line); overflow-wrap: anywhere; }
+.choice:hover:not(:disabled) { border-color: var(--ink); }
+.choice.right { border-color: var(--good); color: var(--good); }
+.choice.wrong { border-color: var(--accent); color: var(--accent); }
+.typed {
+  font: 400 clamp(1.8rem, 6vw, 3rem) var(--ja); color: var(--ink); text-align: center;
+  background: none; border: 0; border-bottom: 1px solid var(--line); border-radius: 0;
+  width: min(460px, 100%); margin-top: 34px; padding: 6px;
+}
+.typed:focus { outline: 0; border-color: var(--ink); }
+.typed.wrong { color: var(--accent); text-decoration: line-through; }
+
+body.zen:not(.listing) header #label, body.zen footer { opacity: 0; }
+body.zen footer:hover, body.zen footer:focus-within { opacity: 1; }
+body.zen #count { color: var(--dim); }
+body.zen .act kbd, body.zen .level { display: none; }
+/* Hotkeys only in zen, except on touch screens, which have no keyboard. */
+@media (hover: hover) and (pointer: fine) {
+  body.zen .actions.hotkeys { visibility: hidden; }
+}
+body.zen .hero:not(.en):not(.sentence):not(.long) { font-size: min(clamp(5.3rem, 21.6vw, 13.2rem), var(--fit5)); }
+body.zen .hero.en { font-size: clamp(3.1rem, 9.6vw, 6.5rem); }
+/* Touch: bigger targets, no key hints, and a zen footer that can be seen before it is tapped. */
+@media (pointer: coarse) {
+  .touchOnly { display: inline-block; }
+  footer { gap: 2px 6px; padding-top: 8px; }
+  footer button { padding: 8px 6px; }
+  body.zen footer { opacity: .45; }
+  main { padding-bottom: 128px; }
+  .act { padding: 10px 8px; }
+  .act kbd { display: none; }
+  .actions { gap: 8px 24px; }
+  .weeknav button { padding: 6px 14px; }
+  .ex .say::before { left: -38px; top: -20px; width: 40px; height: 40px; }
+}
+main.dragging { transition: none; }
+main.settling { transition: transform .18s ease-out, opacity .18s ease-out; }
+
+.list { width: min(720px, 100%); margin: 0 auto; padding: 84px 16px 88px; }
+.list h1 { font: 400 1.5rem var(--en); margin: 0 0 18px 12px; }
+.list { overflow-anchor: none; }   /* stepRow positions rows itself */
+.list:has(.more) { padding-bottom: 100vh; }   /* lets the last rows scroll to the top */
+.row { display: grid; grid-template-columns: minmax(7em, 2fr) 3fr 3.6em; gap: 16px; width: 100%; text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--line); align-items: baseline; }
+.row .w { font-family: var(--ja); font-size: 1.35rem; overflow-wrap: anywhere; }
+.row .c { color: var(--dim); }
+.row:hover .c { color: var(--ink); }
+.row .st { color: var(--dim); font-size: .85rem; font-variant-numeric: lining-nums tabular-nums; text-align: right; white-space: nowrap; }
+.row .st .pass { color: var(--good); }
+.row .st .fail { color: var(--accent); }
+.row.open { background: var(--rowOpen); border-bottom-color: transparent; }
+.row:focus-visible { outline: none; }
+.row.open .c { color: var(--ink); }
+.more { padding: 4px 12px 20px 36px; background: var(--tint); border-bottom: 1px solid var(--line); text-align: left; }
+.panelword { font-family: var(--ja); font-size: clamp(3.4rem, 12vw, 5.5rem); line-height: 1.35; overflow-wrap: anywhere; }
+.panelword.long { font-size: clamp(2.2rem, 7vw, 3.4rem); }
+.ex { margin: 14px 0 0; }
+/* Zero-size and inline: sits on the text's baseline, so furigana can't move it. .38em is mid-kanji. */
+.ex .say { display: inline-block; position: relative; width: 0; height: 0; vertical-align: .38em; overflow: visible; color: color-mix(in srgb, var(--dim) 50%, transparent); }
+.ex .say::before { content: ""; position: absolute; left: -28px; top: -12px; width: 24px; height: 24px; }   /* click target */
+.ex .say span { position: absolute; right: 8px; top: 0; transform: translateY(-50%); display: grid; place-items: center; box-sizing: border-box; width: 15px; height: 15px; border: 1px solid currentColor; border-radius: 50%; font: 9px/1 -apple-system, "Helvetica Neue", Arial, sans-serif; }
+.ex .say:hover { color: var(--accent); }
+.ex .say:focus-visible { outline: none; }
+.ex .say:focus-visible::before { outline: 1px solid var(--accent); }
+.ex .jp { font-family: var(--ja); font-size: 1.25rem; line-height: 2; }
+.ex .trans { font-size: .8rem; visibility: hidden; }   /* hidden, not removed: t must not shift the layout */
+.ex.showTrans .trans { visibility: visible; }
+a.look, a.kanji { color: inherit; text-decoration: none; }
+a.look:hover, a.kanji:hover { color: var(--accent); }
+.asKanji { display: none; }
+body.shift .asKanji { display: inline; }
+body.shift .asWord { display: none; }
+body.shift a.kanji { text-decoration: underline dotted var(--accent) 1px; text-underline-offset: .18em; }
+.done-en { color: var(--dim); margin-top: 6px; }
+/* Hidden, not removed: revealing the text must not move anything. */
+.listen .hero.sentence, .listen .answer { visibility: hidden; }
+.listen.showText .hero.sentence, .listen.showTrans .answer { visibility: visible; }
+.empty { color: var(--dim); }
+rt { -webkit-user-select: none; user-select: none; }   /* selecting a sentence for Speech or copy skips the furigana */
+</style>
+</head>
+<body>
+<header>
+  <span id="label"></span>
+  <span><span id="skipped"></span><a id="count" href="#week" title="This week's list"></a></span>
+</header>
+<div id="app"></div>
+<footer>
+  <button id="listenBtn">listen</button>
+  <button id="zenBtn">zen</button>
+  <button id="themeBtn">theme</button>
+  <button id="strokeBtn">strokes</button>
+  <button id="speedBtn"></button>
+  <button id="fontBtn"></button>
+  <button id="voiceBtn">voice</button>
+  <button id="speakerBtn" title="AivisSpeech voice (v)" hidden></button>
+  <button id="speedBtnTts" title="Speech speed (- slower, = faster, click to reset)"></button>
+  <button id="askBtn" class="touchOnly" title="Explain the selection or sentence (Google AI Mode)">explain</button>
+  <button id="syncBtn" title="Sync to GitHub (y; Y for settings)">sync</button>
+</footer>
+<div id="explain" hidden></div>
+
+<script id="words" type="application/json">/*WORDS*/[]</script>
+<script>
+"use strict";
+const WEEK_SIZE = 100, STORE_KEY = "vocab-drill.v1";
+const STAGES = [
+  { kind: "id", furigana: true, context: true, label: "Recognition · furigana · in context" },
+  { kind: "id", furigana: false, context: true, label: "Recognition · in context" },
+  { kind: "id", furigana: true, context: false, label: "Recognition · furigana" },
+  { kind: "id", furigana: false, context: false, label: "Recognition" },
+  { kind: "choice", label: "Production · choose" },
+  { kind: "type", label: "Production · type" },
+];
+
+/* ---------- data ---------- */
+const WORDS = JSON.parse(document.getElementById("words").textContent).map(
+  ([expr, reading, gloss, capsule, level, rank, slug]) => {
+    const forms = expr.split(/[;；]/).map(s => s.trim()).filter(Boolean);
+    const readings = reading.split(/[;；]/).map(s => s.trim()).filter(Boolean);
+    return { id: forms[0] + "|" + readings[0], forms, readings, word: forms[0], kana: readings[0], sound: readings[0].replace(/\s*[(（][^)）]*[)）]/g, "").replace(/[～~]/g, "").trim(), gloss, capsule, level, rank, slug };
+  });
+const BY_ID = new Map(WORDS.map(w => [w.id, w]));
+
+/* ---------- storage ---------- */
+function loadState() {
+  try { return JSON.parse(localStorage.getItem(STORE_KEY)) || {}; }
+  catch { return {}; }
+}
+const DEFAULTS = { status: {}, results: {}, week: null, day: null, last: null, plain: false, theme: null, strokes: false, strokeSpeed: "quick", font: "animation", history: [], voice: false, log: {}, weeks: [] };
+const S = Object.assign(structuredClone(DEFAULTS), loadState());
+/* Older saves kept only the previous week's words, without its date. */
+if (S.prev && S.prev.length && !S.weeks.length && S.week) {
+  const start = new Date(S.week.start + "T12:00");
+  start.setDate(start.getDate() - 7);
+  S.weeks.push({ start: iso(start), ids: S.prev });
+}
+delete S.prev;
+/* Answers from before the activity log all fall on the first day of the first week. */
+if (!S.logBackfilled && S.week) {
+  const review = S.day ? S.day.cleared.length + S.day.missed.length : 0;
+  const answers = Object.keys(S.status).length + review;
+  S.log[S.week.start] = Math.max(S.log[S.week.start] || 0, answers);
+  S.logBackfilled = true;
+}
+/* Weeks saved before the skipped counter existed: only the first week can be mid-diagnostic. */
+if (S.week && !S.week.ready && S.week.skipped === undefined) {
+  S.week.skipped = Object.values(S.status).filter(v => v === "s").length;
+}
+function save() {
+  S.savedAt = Date.now();
+  try { localStorage.setItem(STORE_KEY, JSON.stringify(S)); } catch {}
+  scheduleSync();
+}
+/* GitHub sync settings: their own key, so the token is never part of the synced state. */
+const SYNC_KEY = "vocab-drill.sync";
+let syncCfg = (() => { try { return JSON.parse(localStorage.getItem(SYNC_KEY)); } catch { return null; } })();
+let syncTimer = null, syncing = null;
+
+/* ---------- dates (local time) ---------- */
+function iso(d) {
+  return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+}
+function thisSunday(now) {
+  const d = new Date(now.getFullYear(), now.getMonth(), now.getDate() - now.getDay());
+  return iso(d);
+}
+
+/* ---------- helpers ---------- */
+const app = document.getElementById("app");
+function el(tag, props, ...kids) {
+  const node = document.createElement(tag);
+  Object.entries(props || {}).forEach(([k, v]) => {
+    if (k === "class") node.className = v;
+    else if (k.startsWith("on")) node.addEventListener(k.slice(2), v);
+    else node[k] = v;
+  });
+  node.append(...kids.flat().filter(k => k !== null && k !== undefined));
+  return node;
+}
+function shuffle(list) {
+  const a = list.slice();
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+const isKana = s => /^[぀-ヿ～~ー]+$/.test(s);
+function ruby(base, rt) {
+  return el("ruby", null, base, el("rt", null, rt));
+}
+/* Attach the reading to the kanji only: 会う/あう → 会(あ)う. */
+function withFurigana(word, kana, wrap = text => text) {
+  if (isKana(word)) return [word];
+  const parts = word.match(/[぀-ゟ～~]+|[^぀-ゟ～~]+/g);
+  const escape = s => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const rx = new RegExp("^" + parts.map(p => /^[぀-ゟ～~]/.test(p) ? escape(p) : "(.+?)").join("") + "$");
+  const match = kana.match(rx);
+  if (!match) return [ruby(wrap(word), kana)];
+  let group = 1;
+  return parts.map(p => /^[぀-ゟ～~]/.test(p) ? p : ruby(wrap(p), match[group++]));
+}
+/* ---------- Jisho links ---------- */
+const hasKanji = s => /[\u3400-\u9fff\uf900-\ufaff]/.test(s);
+const jisho = query => "https://jisho.org/search/" + encodeURIComponent(query);
+const wordUrl = w => w.slug
+  ? "https://jisho.org/word/" + encodeURIComponent(w.slug)
+  : jisho(w.word.replace(/[～~]/g, ""));
+const kanjiUrl = text => jisho([...text].filter(hasKanji).join("") + " #kanji");
+function look(cls, href, ...kids) {
+  return el("a", { class: cls, href, target: "_blank", rel: "noopener" }, ...kids);
+}
+function linkKanji(text) {
+  return [...text].map(c => hasKanji(c) ? look("kanji", kanjiUrl(c), c) : c);
+}
+/* The whole word as one link; holding shift swaps in one link per kanji. */
+function linkedWord(w, furigana) {
+  const build = wrap => furigana ? withFurigana(w.word, w.sound, wrap) : wrap(w.word);
+  return [
+    look("look asWord", wordUrl(w), build(text => text)),
+    el("span", { class: "asKanji" }, build(linkKanji)),
+  ];
+}
+function heroClass(word) {
+  return "hero" + (word.length > 5 ? " long" : "");
+}
+
+/* ---------- example sentences (sentences.js, built by tools/) ---------- */
+/* Loaded separately because it is many times the size of the app. */
+const sentencesReady = new Promise(resolve => {
+  const script = document.createElement("script");
+  script.src = "sentences.js";
+  script.onload = script.onerror = () => resolve();
+  document.head.append(script);
+});
+function parseTranscription(text) {
+  /* "[食|た]べる" and "[学校|がっ|こう]" → tokens with optional readings */
+  const tokens = [], rx = /\[([^|\]]+)\|([^\]]*)\]|([^[]+|\[)/g;
+  for (let m; (m = rx.exec(text));) {
+    if (m[3] !== undefined) { tokens.push({ base: m[3] }); continue; }
+    const rts = m[2].split("|"), chars = [...m[1]];
+    if (rts.length === chars.length) chars.forEach((c, i) => tokens.push(rts[i] ? { base: c, rt: rts[i] } : { base: c }));
+    else tokens.push({ base: m[1], rt: rts.join("") });
+  }
+  return tokens;
+}
+/* Kept for the tab's session so Google isn't asked again. */
+const CACHE_PREFIX = "sentences6:";   /* bump when the data changes */
+function cachedSentences(w) {
+  try { return JSON.parse(sessionStorage.getItem(CACHE_PREFIX + w.id)); } catch { return null; }
+}
+function sentenceFrom([index, at, length]) {
+  const [id, text, transcription, english] = window.SENTENCES.s[index];
+  return { id, text, tokens: parseTranscription(transcription), at, hit: text.slice(at, at + length), english };
+}
+async function fetchSentences(w, count) {
+  const cached = cachedSentences(w);
+  if (cached && cached.asked >= count) return shuffle(cached.found).slice(0, count);
+  await sentencesReady;
+  const data = window.SENTENCES, refs = (data && data.w[w.id]) || [];
+  const found = (refs.length > count ? shuffle(refs).slice(0, count) : refs).map(sentenceFrom);
+  await Promise.all(found.map(googleTranslate));
+  try { sessionStorage.setItem(CACHE_PREFIX + w.id, JSON.stringify({ asked: count, found })); } catch {}
+  return found;
+}
+function sentenceEnglish(s) {
+  return el("div", { class: "trans" }, s.english, " ",
+    s.id ? look("src", "https://tatoeba.org/en/sentences/show/" + s.id, "↗") : "(written by Claude)");
+}
+/* Live and unofficial. If it fails, the sentence keeps Tatoeba's English. */
+async function googleTranslate(sentence) {
+  const url = "https://translate.googleapis.com/translate_a/single?client=gtx&sl=ja&tl=en&dt=t&q=" + encodeURIComponent(sentence.text);
+  try {
+    const res = await fetch(url, { signal: AbortSignal.timeout(5000) });
+    if (!res.ok) throw new Error("google " + res.status);
+    sentence.english = (await res.json())[0].map(part => part[0]).join("");
+  } catch {}
+}
+/* Sentence with the target word marked. Only the word's own furigana is optional. */
+function renderSentence(s, wordFurigana, w) {
+  const start = s.at, end = start + s.hit.length;
+  const build = perKanji => {
+    const text = t => perKanji ? linkKanji(t) : t;
+    const mark = node => el("mark", null, perKanji ? node : look("look", wordUrl(w), node));
+    const out = [];
+    let pos = 0;
+    for (const t of s.tokens) {
+      const a = pos, b = pos + t.base.length;
+      pos = b;
+      if (t.rt) {
+        const inWord = a < end && b > start;
+        const node = wordFurigana || !inWord ? ruby(text(t.base), t.rt) : text(t.base);
+        out.push(...[].concat(inWord ? mark(node) : node));
+        continue;
+      }
+      const cuts = [a, Math.min(b, Math.max(a, start)), Math.min(b, Math.max(a, end)), b];
+      for (let i = 0; i < 3; i++) {
+        const piece = t.base.slice(cuts[i] - a, cuts[i + 1] - a);
+        if (piece) out.push(...[].concat(i === 1 ? mark(text(piece)) : text(piece)));
+      }
+    }
+    return out;
+  };
+  return [el("span", { class: "asWord" }, build(false)), el("span", { class: "asKanji" }, build(true))];
+}
+
+/* ---------- speech (browser voices) ---------- */
+/* Siri voices aren't offered to web pages, so the system's pick can't be followed: take the best on offer. */
+function japaneseVoice() {
+  const voices = speechSynthesis.getVoices().filter(v => /^ja\b/i.test(v.lang.replace("_", "-")));
+  const natural = [/premium/i, /enhanced/i, /siri/i, /kyoko/i, /otoya|o-ren|hattori/i, /google/i];
+  for (const name of natural) {
+    const match = voices.find(v => name.test(v.name));
+    if (match) return match;
+  }
+  return voices[0] || null;
+}
+if ("speechSynthesis" in window) speechSynthesis.getVoices();   /* Chrome loads the list on first ask */
+/* Kana for words, so 中 is never guessed as the wrong reading. */
+function speak() {
+  const text = spokenSentence || (lookup && lookup.sound);
+  if (text) say(text);
+}
+/* Same hash as tools/record_audio.py: FNV-1a over UTF-16 code units. */
+function audioUrl(text) {
+  let hash = 0x811c9dc5;
+  for (let i = 0; i < text.length; i++) hash = Math.imul(hash ^ text.charCodeAt(i), 0x01000193);
+  return "audio/" + (hash >>> 0).toString(16).padStart(8, "0") + ".m4a";
+}
+/* AivisSpeech, the local engine app: live, so its settings and dictionary apply at once.
+   Pages served from localhost only; the engine refuses file:// and other sites unless allowed in its settings. */
+const AIVIS = "http://127.0.0.1:10101";
+/* The v rotation, in order: [label, engine speaker name, style name]. Ones not installed are skipped. */
+const AIVIS_VOICES = [
+  ["shigeru", "阿井田 茂", "ノーマル"],
+  ["shigeru · calm", "阿井田 茂", "Calm"],
+  ["fumifumi", "fumifumi", "ノーマル"],
+  ["猩々博士", "猩々博士 (雑談ボイス)", "ノーマル"],
+  ["morioki", "morioki", "ノーマル"],
+];
+let aivisVoices = [];           /* AIVIS_VOICES found in the engine: [{ name, style }] */
+const aivisStyle = () => aivisVoices.some(v => v.style === S.aivisStyle) || !aivisVoices.length
+  ? S.aivisStyle || 1310138976   /* shigeru, until the engine has answered */
+  : aivisVoices[0].style;
+function paintSpeaker() {
+  const button = document.getElementById("speakerBtn"), voice = aivisVoices.find(v => v.style === aivisStyle());
+  button.hidden = !aivisVoices.length;
+  button.textContent = voice ? voice.name : "aivis";
+}
+fetch(AIVIS + "/speakers", { signal: AbortSignal.timeout(4000) }).then(r => r.json()).then(list => {
+  aivisVoices = AIVIS_VOICES.flatMap(([name, speaker, styleName]) => {
+    const style = list.flatMap(s => s.name === speaker ? s.styles : []).find(st => st.name === styleName);
+    return style ? [{ name, style: style.id }] : [];
+  });
+  paintSpeaker();
+}).catch(() => {});
+/* Next installed voice, heard at once on whatever is on screen. */
+function cycleSpeaker() {
+  if (!aivisVoices.length) return;
+  const at = aivisVoices.findIndex(v => v.style === aivisStyle());
+  S.aivisStyle = aivisVoices[(at + 1) % aivisVoices.length].style;
+  S.speechPrefsAt = Date.now();
+  save();
+  paintSpeaker();
+  speak();
+}
+const aivisClips = new Map();   /* style + text → Promise of a blob URL, or null */
+let aivisDownUntil = 0;         /* after a failed connect, don't wait on it again for a while */
+/* ---- reading check: the engine guesses readings (一日 as いちにち where we know ついたち) ---- */
+/* Our sentence readings, by text, as bracket groups: "[一日|ついたち]" stays one group.
+   Only some are trusted: the drilled words' (forced from the word list) and all of Claude's sentences.
+   Tatoeba's other readings are machine-made and wrong too often (少し as すくなし, 日本 as にっぽん). */
+let readingRows = null;   /* text → { transcription, trustAll, spans: [[at, end]] } */
+function groupsFor(text) {
+  if (!readingRows) {
+    if (!window.SENTENCES) return null;
+    readingRows = new Map(window.SENTENCES.s.map(([id, text, transcription]) => [text, { transcription, trustAll: id === 0, spans: [] }]));
+    for (const refs of Object.values(window.SENTENCES.w))
+      for (const [index, at, length] of refs) readingRows.get(window.SENTENCES.s[index][1]).spans.push([at, at + length]);
+  }
+  const row = readingRows.get(text);
+  if (!row) return null;
+  const groups = [], rx = /\[([^|\]]+)\|([^\]]*)\]|([^[]+|\[)/g;
+  let pos = 0;
+  for (let m; (m = rx.exec(row.transcription));) {
+    const base = m[3] !== undefined ? m[3] : m[1], start = pos;
+    pos += base.length;
+    groups.push(m[3] !== undefined ? { base } : { base, rt: m[2].replace(/\|/g, ""),
+      trusted: row.trustAll || row.spans.some(([at, end]) => start < end && pos > at) });
+  }
+  return groups.map(g => g.base).join("") === text ? groups : null;
+}
+/* Compared loosely, so spelling isn't taken for misreading: きょう is キョオ to the engine, particle は is ワ,
+   and voicing is dropped because our readings are per kanji (入り口 is いりくち to us, イリグチ to the engine). */
+const LOOSE = { ヂ: "シ", ヅ: "ス", ウ: "オ", イ: "エ", ハ: "ワ", ヘ: "エ", ヲ: "オ" };
+const loose = s => [...s.replace(/[ぁ-ゖ]/g, c => String.fromCharCode(c.charCodeAt(0) + 0x60))]
+  .filter(c => /[ァ-ヶ]/.test(c)).map(c => LOOSE[c] || c.normalize("NFD")[0]).map(c => LOOSE[c] || c);
+/* The text again with each group the engine misread spelled in kana; null if it read them all as we do. */
+function respell(text, query) {
+  const groups = groupsFor(text);
+  if (!groups) return null;
+  const heard = loose(query.accent_phrases.flatMap(p => p.moras.map(m => m.text)).join(""));
+  const ours = groups.flatMap((g, i) => loose(g.rt || g.base).map(c => ({ c, i })));
+  if (ours.map(o => o.c).join("") === heard.join("")) return null;
+  /* Edit distance, then blame each edit on the group it falls in. */
+  const n = ours.length, m = heard.length, d = [];
+  for (let a = 0; a <= n; a++) { d[a] = [a]; for (let b = 1; b <= m; b++) d[a][b] = a ? 0 : b; }
+  for (let a = 1; a <= n; a++) for (let b = 1; b <= m; b++)
+    d[a][b] = Math.min(d[a - 1][b] + 1, d[a][b - 1] + 1, d[a - 1][b - 1] + (ours[a - 1].c === heard[b - 1] ? 0 : 1));
+  const wrong = new Set();
+  for (let a = n, b = m; a > 0 || b > 0;) {
+    if (a && b && d[a][b] === d[a - 1][b - 1] + (ours[a - 1].c === heard[b - 1] ? 0 : 1)) {
+      if (ours[a - 1].c !== heard[b - 1]) wrong.add(ours[a - 1].i);
+      a--; b--;
+    } else if (a && d[a][b] === d[a - 1][b] + 1) { wrong.add(ours[a - 1].i); a--; }
+    else { if (a) wrong.add(ours[a - 1].i); b--; }
+  }
+  const fix = [...wrong].filter(i => groups[i].trusted);
+  if (!fix.length) return null;
+  return groups.map((g, i) => fix.includes(i) ? g.rt : g.base).join("");
+}
+async function aivisQuery(text, at) {
+  const query = await fetch(AIVIS + "/audio_query" + at + "&text=" + encodeURIComponent(text), { method: "POST", signal: AbortSignal.timeout(4000) });
+  if (!query.ok) throw new Error("aivis " + query.status);
+  return query.json();
+}
+function aivis(text) {
+  const style = aivisStyle(), speed = speechSpeed(), key = style + " " + speed + " " + text;
+  if (aivisClips.has(key)) return aivisClips.get(key);
+  if (Date.now() < aivisDownUntil) return Promise.resolve(null);
+  const made = (async () => {
+    const at = "?speaker=" + style;
+    let query = await aivisQuery(text, at);
+    const spoken = respell(text, query);
+    if (spoken) {
+      console.info("aivis reading:", text, "→", spoken);
+      query = await aivisQuery(spoken, at);
+    }
+    query.speedScale = speed;
+    const wav = await fetch(AIVIS + "/synthesis" + at, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(query), signal: AbortSignal.timeout(15000) });
+    if (!wav.ok) throw new Error("aivis " + wav.status);
+    return URL.createObjectURL(await wav.blob());
+  })().catch(() => {
+    aivisClips.delete(key);
+    aivisDownUntil = Date.now() + 30000;
+    return null;
+  });
+  aivisClips.set(key, made);
+  return made;
+}
+/* Speed for every voice: Aivis's speedScale, a recording's playback rate, a browser voice's rate. */
+const SPEED_MIN = 0.5, SPEED_MAX = 1.5;
+const speechSpeed = () => S.speechSpeed || 1;
+function setSpeed(speed) {
+  S.speechSpeed = Math.round(Math.min(SPEED_MAX, Math.max(SPEED_MIN, speed)) * 10) / 10;
+  S.speechPrefsAt = Date.now();
+  save();
+  paintSpeed();
+  speak();   /* hear it at once */
+}
+function paintSpeed() {
+  document.getElementById("speedBtnTts").textContent = speechSpeed().toFixed(1) + "×";
+}
+/* The instant-translate userscript shares voice and speed; it posts its own when they're newer. */
+addEventListener("message", e => {
+  const m = e.data;
+  if (!m || m.type !== "vocab-drill:speech-prefs" || !(m.at > (S.speechPrefsAt || 0))) return;
+  if (Number.isInteger(m.aivisStyle)) S.aivisStyle = m.aivisStyle;
+  if (m.speechSpeed >= SPEED_MIN && m.speechSpeed <= SPEED_MAX) S.speechSpeed = m.speechSpeed;
+  S.speechPrefsAt = m.at;
+  save();
+  paintSpeaker();
+  paintSpeed();
+});
+/* AivisSpeech, else a recording, else a browser voice. */
+let clip = null, saying = 0;
+function hush() {
+  saying++;
+  if (clip) { clip.pause(); clip = null; }
+  if ("speechSynthesis" in window) speechSynthesis.cancel();
+}
+async function say(text) {
+  hush();
+  const mine = saying, live = await aivis(text);
+  if (mine !== saying) return;   /* something else spoke, or the card changed */
+  const audio = clip = new Audio(live || audioUrl(text));
+  if (!live) audio.playbackRate = speechSpeed();   /* Aivis was already made at this speed; recordings keep their pitch */
+  audio.play().catch(() => { if (clip === audio) sayLive(text); });
+}
+function sayLive(text) {
+  if (!("speechSynthesis" in window)) return;
+  const utterance = new SpeechSynthesisUtterance(text);
+  utterance.lang = "ja-JP";
+  utterance.rate = speechSpeed();
+  const voice = japaneseVoice();
+  if (voice) utterance.voice = voice;
+  speechSynthesis.speak(utterance);
+}
+/* The answer is on screen: safe to read aloud. */
+function announce() {
+  if (S.voice) speak();
+}
+function toggleVoice() {
+  S.voice = !S.voice;
+  save();
+  document.getElementById("voiceBtn").classList.toggle("on", S.voice);
+}
+
+/* ---------- stroke order (AnimCJK, pinned commit) ---------- */
+/* Not jsDelivr: the repo is over its 50 MB limit, so uncached files return 403. */
+const ANIMCJK = "https://raw.githubusercontent.com/parsimonhi/animCJK/d688a07991b888565fb289590e760c7e6bd33e83/";
+const FONTS = ["animation", "textbook", "mincho", "gothic", "rounded", "edomoji", "calligraphy"];
+const STROKE_SPEEDS = { quick: 0.22, fast: 0.1, slow: 0.5 };   /* seconds per stroke */
+const STROKE_GAP = 0.03;
+let strokeHero = null;   /* hero the s key redraws */
+let strokeRun = null;    /* newest drawing; older ones stop when it changes */
+
+function strokeChars(hero) {
+  const host = hero.querySelector(".asWord");
+  if (!host) return [];
+  if (!host.querySelector(".strokeChar")) {
+    const walker = document.createTreeWalker(host, NodeFilter.SHOW_TEXT);
+    const nodes = [];
+    while (walker.nextNode()) if (!walker.currentNode.parentNode.closest("rt")) nodes.push(walker.currentNode);
+    nodes.forEach(node => node.replaceWith(...[...node.data].map(c =>
+      /[\u3040-\u30ff\u3400-\u9fff]/.test(c) ? el("span", { class: "strokeChar" }, c) : c)));
+  }
+  return [...host.querySelectorAll(".strokeChar")];
+}
+async function fetchStrokes(c, retries = 1) {
+  const code = c.codePointAt(0);
+  const folder = code <= 0x30ff ? "svgsJaKana/" : "svgsJa/";
+  try {
+    const res = await fetch(ANIMCJK + folder + code + ".svg");
+    if (res.status === 404) return null;
+    if (!res.ok) throw new Error("animcjk " + res.status);
+    const svg = new DOMParser().parseFromString(await res.text(), "image/svg+xml").documentElement;
+    if (svg.nodeName !== "svg") return null;
+    svg.querySelectorAll("style, script").forEach(node => node.remove());
+    return document.importNode(svg, true);
+  } catch {
+    return retries > 0 ? fetchStrokes(c, retries - 1) : null;
+  }
+}
+function clearStrokes(chars) {
+  chars.forEach(span => {
+    span.classList.remove("drawing");
+    span.querySelectorAll("svg").forEach(svg => svg.remove());
+  });
+}
+/* Show the word in AnimCJK's letterforms, drawn stroke by stroke or already finished. */
+async function drawWord(hero, animate) {
+  const run = (strokeRun = {});
+  const chars = strokeChars(hero);
+  const svgs = await Promise.all(chars.map(span => fetchStrokes(span.textContent)));
+  if (run !== strokeRun) return;
+  clearStrokes(chars);
+  const seconds = STROKE_SPEEDS[S.strokeSpeed];
+  let time = 0;
+  chars.forEach((span, i) => {
+    const svg = svgs[i];
+    if (!svg) return;
+    if (!animate) svg.classList.add("still");
+    else svg.querySelectorAll("path[clip-path]").forEach(path => {
+      path.style.setProperty("--t", seconds + "s");
+      path.style.setProperty("--d", time.toFixed(2) + "s");
+      time += seconds + STROKE_GAP;
+    });
+    span.classList.add("drawing");
+    span.append(svg);
+  });
+  if (!animate || S.font === "animation") return;
+  await new Promise(done => setTimeout(done, time * 1000 + 400));
+  if (run === strokeRun) clearStrokes(chars);
+}
+/* The word at rest: AnimCJK letterforms, or the chosen font. */
+function restWord(hero) {
+  if (S.font === "animation") return drawWord(hero, false);
+  strokeRun = null;
+  clearStrokes(strokeChars(hero));
+}
+/* Register a word shown in the hero. */
+function showStrokes(hero) {
+  strokeHero = hero;
+  if (S.strokes) drawWord(hero, true);
+  else restWord(hero);
+}
+/* Load the next word's files so its card does not start in the fallback font. */
+function warmStrokes(w) {
+  if (w && (S.strokes || S.font === "animation")) [...w.word].filter(c => /[\u3040-\u30ff\u3400-\u9fff]/.test(c)).forEach(c => fetchStrokes(c));
+}
+
+/* ---------- routing ---------- */
+let keys = null;   /* key handler for the visible card */
+let touch = null;  /* gesture handlers for the visible view: { left, right, up, down, tap } */
+let undo = null;   /* last diagnostic answer, this session only */
+let lookup = null; /* word the l, L and r keys act on */
+let spokenSentence = null; /* sentence on the current card, read instead of the word */
+let peek = null;   /* position in S.history being viewed; null is the live card */
+const HISTORY_SIZE = 200;
+function remember(id) {
+  const today = iso(new Date());
+  S.log[today] = (S.log[today] || 0) + 1;
+  S.history.push(id);
+  S.history.splice(0, S.history.length - HISTORY_SIZE);
+}
+const sentences = new Map();   /* in-memory prefetch for upcoming cards */
+
+function mainMode() {
+  const now = new Date(), today = iso(now), sunday = thisSunday(now);
+  if (!S.week || S.week.start !== sunday) {
+    if (S.week && S.week.ids.length) S.weeks.push({ start: S.week.start, ids: S.week.ids });
+    S.week = { start: sunday, ids: [], ready: false, madeOn: null };
+    undo = null;
+    save();
+  }
+  if (!S.week.ready) return "diag";
+  if (S.week.madeOn === today || now.getDay() === 0) return "done";
+  if (!S.day || S.day.date !== today) {
+    S.day = { date: today, stage: now.getDay() - 1, queue: shuffle(S.week.ids), missed: [], cleared: [], round: 1 };
+    save();
+  }
+  return S.day.queue.length || S.day.missed.length ? "review" : "done";
+}
+function render() {
+  keys = null;
+  touch = null;
+  lookup = null;
+  spokenSentence = null;
+  hush();
+  closeExplain();
+  strokeHero = null;
+  strokeRun = null;
+  document.body.classList.toggle("zen", !S.plain);
+  applyTheme();
+  const wantList = location.hash === "#week", wantListen = location.hash === "#listen";
+  document.body.classList.toggle("listing", wantList || wantListen);
+  document.body.classList.toggle("weekList", wantList);
+  const mode = mainMode();
+  updateCount(mode);
+  app.replaceChildren();
+  if (wantList) return renderWeek();
+  if (wantListen) return renderListen();
+  if (peek !== null) return renderPeek();
+  if (mode === "diag") renderDiag();
+  else if (mode === "review") renderCard();
+  else renderDone();
+}
+function updateCount(mode) {
+  const count = document.getElementById("count");
+  const label = document.getElementById("label");
+  let done, total, past = false;
+  const today = S.day && S.day.date === iso(new Date()) ? S.day : null;
+  if (mode === "diag") { done = S.week.ids.length; total = WEEK_SIZE; }
+  else if (today && today.cleared.length) { done = today.cleared.length; total = S.week.ids.length; }
+  else if (S.last) { done = S.last.done; total = S.last.total; past = mode !== "done"; }
+  else { done = 0; total = S.week.ids.length; }
+  count.textContent = done + "/" + total;
+  count.classList.toggle("past", past);
+  document.getElementById("skipped").textContent = mode === "diag" ? (S.week.skipped || 0) + " skipped" : "";
+  label.textContent = mode === "diag" ? "Sunday diagnostic" : mode === "review" ? STAGES[S.day.stage].label : "";
+}
+
+/* ---------- history (view only) ---------- */
+function stepHistory(by) {
+  const last = S.history.length - 1;
+  if (peek === null) {
+    if (by > 0 || last < 0) return;
+    peek = last;
+  } else if (peek + by > last) peek = null;
+  else peek = Math.max(0, peek + by);
+  render();
+}
+function renderPeek() {
+  const w = BY_ID.get(S.history[peek]);
+  if (!w) { peek = null; return render(); }
+  const hero = el("div", { class: heroClass(w.word), lang: "ja" }, linkedWord(w, false));
+  lookup = w;
+  document.getElementById("label").textContent = "History";
+  app.append(el("main", null, hero,
+    el("div", { class: "answer" },
+      el("div", { class: "reading" }, w.kana),
+      el("div", { class: "gloss" }, w.gloss)),
+    el("div", { class: "note level" }, (S.history.length - peek) + " back")));
+  showStrokes(hero);
+  announce();
+  touch = { right: () => stepHistory(-1), down: () => stepHistory(-1), left: () => stepHistory(1), up: () => { peek = null; render(); } };
+}
+
+/* ---------- diagnostic ---------- */
+function nextUnseen() {
+  return WORDS.find(w => !S.status[w.id]);
+}
+function finishDiag() {
+  S.week.ready = true;
+  S.week.madeOn = iso(new Date());
+  S.last = { done: S.week.ids.length, total: S.week.ids.length };
+  undo = null;
+  save();
+  render();
+}
+function answerDiag(w, status) {
+  S.status[w.id] = status;
+  remember(w.id);
+  if (status === "w") S.week.ids.push(w.id);
+  else S.week.skipped = (S.week.skipped || 0) + 1;
+  undo = w.id;
+  save();
+  if (S.week.ids.length >= WEEK_SIZE || !nextUnseen()) return finishDiag();
+  render();
+}
+function undoDiag() {
+  if (!undo) return;
+  if (S.status[undo] === "s") S.week.skipped--;
+  if (S.history[S.history.length - 1] === undo) {
+    S.history.pop();
+    const today = iso(new Date());
+    if (S.log[today]) S.log[today]--;
+  }
+  delete S.status[undo];
+  S.week.ids = S.week.ids.filter(id => id !== undo);
+  undo = null;
+  save();
+  render();
+}
+function renderDiag() {
+  const w = nextUnseen();
+  if (!w) {
+    if (S.week.ids.length) return finishDiag();
+    return app.append(el("main", null, el("div", { class: "hero long" }, "皆伝"), el("div", { class: "done-en" }, "That's the whole list.")));
+  }
+  const answer = el("div", { class: "answer" });
+  /* Furigana is always laid out and only hidden, so toggling moves nothing. */
+  const hero = el("div", { class: heroClass(w.word) + " nofuri", lang: "ja" }, linkedWord(w, true));
+  const toggleFurigana = () => hero.classList.toggle("nofuri");
+  lookup = w;
+  /* Swipe right like j (skip, already known), left like k (keep); a tap reveals. */
+  const gestures = touch = { right: () => answerDiag(w, "s"), left: () => answerDiag(w, "w"), up: speak, down: () => stepHistory(-1) };
+  const reveal = () => {
+    gestures.tap = null;   /* revealed: taps reach the Jisho links again */
+    answer.replaceChildren(
+      el("div", { class: "reading" }, w.kana),
+      el("div", { class: "gloss" }, w.gloss));
+    announce();
+  };
+  keys = e => {
+    if (e.key === " ") reveal();
+    else if (e.key === "j") answerDiag(w, "s");
+    else if (e.key === "k") answerDiag(w, "w");
+    else if (e.key === "f") toggleFurigana();
+    else if (e.key === "u") undoDiag();
+    else return false;
+  };
+  gestures.tap = reveal;
+  app.append(el("main", null,
+    hero,
+    answer,
+    el("div", { class: "actions hotkeys" },
+      action("Show", " ", reveal, "space"),
+      action("Furigana", "f", toggleFurigana),
+      action("Strokes", "s", () => drawWord(hero, true)),
+      action("Skip", "j", () => answerDiag(w, "s")),
+      action("Keep", "k", () => answerDiag(w, "w")),
+      undo ? action("Undo", "u", undoDiag) : null),
+    el("div", { class: "note level" }, "N" + w.level)));
+  showStrokes(hero);
+  warmStrokes(WORDS.find(o => o !== w && !S.status[o.id]));
+}
+function action(text, key, handler, keyName) {
+  return el("button", { class: "act", onclick: handler }, text, el("kbd", null, keyName || key));
+}
+
+/* ---------- daily review ---------- */
+function grade(w, correct) {
+  const d = S.day;
+  d.queue.shift();
+  (correct ? d.cleared : d.missed).push(w.id);
+  const result = S.results[w.id] || (S.results[w.id] = { passed: 0, total: 0, last: false });
+  result.passed += correct ? 1 : 0;
+  result.total++;
+  result.last = correct;
+  remember(w.id);
+  if (!d.queue.length && d.missed.length) {
+    d.queue = shuffle(d.missed);
+    d.missed = [];
+    d.round++;
+  }
+  if (!d.queue.length) S.last = { done: d.cleared.length, total: d.cleared.length };
+  save();
+  render();
+}
+function prefetch(stage) {
+  if (!stage.context) return;
+  S.day.queue.slice(0, 2).forEach(id => {
+    if (!sentences.has(id)) sentences.set(id, fetchSentences(BY_ID.get(id), 1).catch(() => []));
+  });
+}
+function renderCard() {
+  const d = S.day, stage = STAGES[d.stage], w = BY_ID.get(d.queue[0]);
+  if (!w) { d.queue.shift(); save(); return render(); }
+  prefetch(stage);
+  if (!stage.context) warmStrokes(BY_ID.get(d.queue[1]));
+  const note = d.round > 1 ? "Missed words · " + d.queue.length + " left" : "";
+  if (stage.kind === "id") renderRecognition(w, stage, note);
+  else if (stage.kind === "choice") renderChoice(w, note);
+  else renderType(w, note);
+}
+function renderRecognition(w, stage, note) {
+  const token = (renderRecognition.token = {});
+  const front = el("div", { class: heroClass(w.word), lang: "ja" }, linkedWord(w, stage.furigana));
+  lookup = w;
+  const answer = el("div", { class: "answer" });
+  const buttons = el("div", { class: "actions hotkeys" });
+  const info = el("div", { class: "note" }, note);
+  let sentence = null, shown = false;
+  /* Swipe right like j (got it); left reveals, then counts as k (missed). */
+  const gestures = touch = { right: () => grade(w, true), left: () => shown ? grade(w, false) : reveal(), up: speak, down: () => stepHistory(-1) };
+  const reveal = () => {
+    if (shown) return;
+    shown = true;
+    gestures.tap = null;
+    answer.replaceChildren(
+      el("div", { class: "reading" }, w.kana),
+      el("div", { class: "gloss" }, w.gloss),
+      sentence ? sentenceEnglish(sentence) : null);
+    buttons.replaceChildren(
+      action("Got it", "j", () => grade(w, true)),
+      action("Missed", "k", () => grade(w, false)));
+    announce();
+  };
+  buttons.append(action("Show", " ", reveal, "space"), action("Got it", "j", () => grade(w, true)));
+  keys = e => {
+    if (e.key === " " || e.key === "Enter") reveal();
+    else if (e.key === "j") grade(w, true);   /* no need to reveal a word you're sure of */
+    else if (shown && e.key === "k") grade(w, false);
+    else return false;
+  };
+  gestures.tap = reveal;
+  app.append(el("main", null, front, answer, buttons, info));
+  if (!stage.context) showStrokes(front);
+  else {
+    front.style.visibility = "hidden";
+    sentences.get(w.id).then(list => {
+      sentences.delete(w.id);
+      if (token !== renderRecognition.token) return;
+      front.style.visibility = "";
+      if (!list.length) {
+        info.textContent = [note, "No example sentence found"].filter(Boolean).join(" · ");
+        showStrokes(front);
+        return;
+      }
+      sentence = list[0];
+      spokenSentence = sentence.text;
+      front.className = "hero sentence";
+      front.replaceChildren(...renderSentence(sentence, stage.furigana, w));
+    });
+  }
+}
+function distractors(w) {
+  const taken = new Set([w.capsule, ...w.forms]);
+  const verb = /^to /.test(w.gloss);
+  const pool = shuffle(WORDS.filter(o => o.level === w.level && o.id !== w.id && /^to /.test(o.gloss) === verb));
+  const picks = [];
+  for (const o of pool) {
+    if (taken.has(o.capsule) || taken.has(o.word)) continue;
+    taken.add(o.capsule); taken.add(o.word);
+    picks.push(o);
+    if (picks.length === 3) break;
+  }
+  return picks;
+}
+function renderChoice(w, note) {
+  const options = shuffle([w, ...distractors(w)]);
+  const buttons = el("div", { class: "actions" });
+  let settled = false;
+  const pick = (o, node) => {
+    if (settled) return;
+    settled = true;
+    const correct = o === w;
+    grid.querySelectorAll("button").forEach((b, i) => {
+      b.disabled = true;
+      if (options[i] === w) b.classList.add("right");
+    });
+    if (!correct) node.classList.add("wrong");
+    buttons.replaceChildren(action("Next", "Enter", () => grade(w, correct), "enter"));
+    keys = e => { if (e.key === "Enter" || e.key === " ") grade(w, correct); else return false; };
+    touch = { left: () => grade(w, correct), right: () => grade(w, correct), up: speak, down: () => stepHistory(-1) };
+    lookup = w;
+    info.replaceChildren(el("span", { lang: "ja" }, linkedWord(w, false), " ", w.kana));
+    announce();
+  };
+  const grid = el("div", { class: "choices", lang: "ja" }, options.map(o => {
+    const node = el("button", { class: "choice", onclick: () => pick(o, node) }, o.word);
+    return node;
+  }));
+  const info = el("div", { class: "note" }, note);
+  keys = e => {
+    const i = "1234".indexOf(e.key);
+    if (i < 0 || i >= options.length) return false;
+    pick(options[i], grid.children[i]);
+  };
+  touch = { down: () => stepHistory(-1) };
+  app.append(el("main", null, el("div", { class: "hero en" }, w.gloss), grid, buttons, info));
+}
+function renderType(w, note) {
+  const bare = s => s.replace(/[～~\s　]/g, "");
+  const accepted = new Set(w.forms.map(bare));
+  const input = el("input", { class: "typed", lang: "ja", autocomplete: "off", autocapitalize: "off", spellcheck: false, ariaLabel: "Japanese" });
+  input.setAttribute("autocorrect", "off");
+  const answer = el("div", { class: "answer" });
+  const buttons = el("div", { class: "actions" });
+  let settled = false;
+  const settle = correct => {
+    settled = true;
+    input.readOnly = true;
+    if (!correct) input.classList.add("wrong");
+    const hero = el("div", { class: "hero long", lang: "ja" }, linkedWord(w, true));
+    answer.replaceChildren(hero);
+    showStrokes(hero);
+    lookup = w;
+    announce();
+    buttons.replaceChildren(action("Next", "Enter", () => grade(w, correct), "enter"));
+    keys = e => { if (e.key === "Enter") grade(w, correct); else return false; };
+    touch = { left: () => grade(w, correct), right: () => grade(w, correct), up: speak, down: () => stepHistory(-1) };
+  };
+  input.addEventListener("keydown", e => {
+    if (settled || e.key !== "Enter" || e.isComposing || e.keyCode === 229) return;
+    e.preventDefault();
+    e.stopPropagation();
+    const value = bare(input.value);
+    if (value) settle(accepted.has(value));
+  });
+  buttons.append(action("Don't know", "", () => settle(false), " "));
+  app.append(el("main", null, el("div", { class: "hero en" }, w.gloss), input, answer, buttons, el("div", { class: "note" }, note)));
+  input.focus();
+}
+
+/* ---------- done ---------- */
+function renderDone() {
+  app.append(el("main", null,
+    el("div", { class: "hero", lang: "ja" }, "お疲れ様"),
+    el("div", { class: "done-en" }, "All done")));
+  touch = { right: () => stepHistory(-1), down: () => stepHistory(-1) };
+}
+
+/* ---------- week list ---------- */
+const HEAT_MIN_MONTHS = 1;
+const HEAT_STEPS = [1, 26, 76, 151];   /* cards per day where each shade starts */
+function heatLevel(count) {
+  return HEAT_STEPS.filter(step => count >= step).length;
+}
+function shortDate(text) {
+  return new Date(text + "T12:00").toLocaleDateString("en-US", { month: "short", day: "numeric" });
+}
+function renderHeatmap() {
+  const now = new Date(), todayIso = iso(now);
+  const floor = new Date(now.getFullYear(), now.getMonth() - HEAT_MIN_MONTHS, now.getDate(), 12);
+  const logged = Object.keys(S.log).sort()[0];
+  const first = logged && logged < iso(floor) ? new Date(logged + "T12:00") : floor;
+  const day = new Date(first.getFullYear(), first.getMonth(), first.getDate() - first.getDay(), 12);
+  const last = iso(new Date(now.getFullYear(), now.getMonth(), now.getDate() + 6 - now.getDay(), 12));
+  const line = el("span", null);
+  let total = 0, active = 0, column = 0;
+  const resting = () => total + " cards · " + active + (active === 1 ? " day" : " days");
+  const nodes = [];
+  while (iso(day) <= last) {
+    const date = iso(day), row = day.getDay();
+    /* A month is labelled over the week holding its 1st, or over the first week. */
+    const saturday = new Date(day.getFullYear(), day.getMonth(), day.getDate() + 6, 12);
+    if (row === 0 && (column === 0 || saturday.getDate() <= 7)) {
+      nodes.push(el("span", { class: "month", style: "grid-column: " + (column + 1) + " / span 3" },
+        saturday.toLocaleDateString("en-US", { month: "short", year: "numeric" })));
+    }
+    const cell = el("span", { class: "cell", style: "grid-column: " + (column + 1) + "; grid-row: " + (row + 2) }, String(day.getDate()));
+    if (date > todayIso) cell.classList.add("future");
+    else {
+      const count = S.log[date] || 0;
+      total += count;
+      if (count) {
+        active++;
+        cell.dataset.level = heatLevel(count);
+        cell.style.setProperty("--level", heatLevel(count));
+      }
+      if (date === todayIso) cell.classList.add("today");
+      const label = shortDate(date) + ": " + count + (count === 1 ? " card" : " cards");
+      cell.title = label;
+      cell.ariaLabel = label;
+      cell.addEventListener("mouseenter", () => { line.textContent = label; });
+      cell.addEventListener("mouseleave", () => { line.textContent = resting(); });
+      cell.addEventListener("click", () => { line.textContent = label; });
+    }
+    nodes.push(cell);
+    if (row === 6) column++;
+    day.setDate(day.getDate() + 1);
+  }
+  line.textContent = resting();
+  const swatch = level => {
+    const cell = el("span", { class: "cell" });
+    if (level) { cell.dataset.level = level; cell.style.setProperty("--level", level); }
+    return cell;
+  };
+  const scroller = el("div", { class: "scroller" }, el("div", { class: "grid" }, nodes));
+  requestAnimationFrame(() => { scroller.scrollLeft = scroller.scrollWidth; });
+  return el("div", { class: "heat" }, scroller,
+    el("div", { class: "key" }, line,
+      el("span", { class: "scale" }, "less ", [0, 1, 2, 3, 4].map(swatch), " more")));
+}
+let pinned = null;   /* row held under the header until the reader scrolls or clicks */
+const unpin = () => { pinned = null; };
+["wheel", "touchmove", "pointerdown"].forEach(type => addEventListener(type, unpin, { passive: true }));
+const pin = () => {
+  if (pinned && pinned.isConnected)
+    scrollTo(0, pinned.getBoundingClientRect().top + scrollY - document.querySelector("header").offsetHeight);
+};
+let viewedWeek = null;   /* index into the week list; null is the newest */
+function weekList() {
+  return S.weeks.concat(S.week).filter(week => week.ids.length);
+}
+function stepWeek(by) {
+  const weeks = weekList(), index = (viewedWeek === null ? weeks.length - 1 : viewedWeek) + by;
+  if (index < 0 || index >= weeks.length) return;
+  viewedWeek = index === weeks.length - 1 ? null : index;
+  render();
+}
+function reviewStatus(w) {
+  const r = S.results[w.id];
+  if (!r) return el("span", { class: "st" });
+  return el("span", { class: "st", title: r.passed + " of " + r.total + " reviews passed" }, r.passed + "/" + r.total + " ",
+    el("span", { class: r.last ? "pass" : "fail" }, r.last ? "✓" : "✗"));
+}
+/* Ready for the system's Speak Selection. A drag keeps the reader's own selection. */
+function selectSentence(e) {
+  if (e.target.closest("a, button") || !getSelection().isCollapsed) return;
+  getSelection().selectAllChildren(e.currentTarget.querySelector(document.body.classList.contains("shift") ? ".asKanji" : ".asWord"));
+}
+function renderWeek() {
+  const weeks = weekList();
+  const index = viewedWeek === null ? weeks.length - 1 : viewedWeek;
+  const week = weeks[index];
+  const ids = week ? week.ids : [];
+  const list = el("div", { class: "list" }, renderHeatmap(),
+    el("div", { class: "weeknav" },
+      el("button", { ariaLabel: "Previous week", disabled: index <= 0, onclick: () => stepWeek(-1) }, "←"),
+      el("h1", null, !week ? "No words yet" : week === S.week ? "This week" : "Week of " + shortDate(week.start)),
+      el("button", { ariaLabel: "Next week", disabled: index >= weeks.length - 1, onclick: () => stepWeek(1) }, "→")));
+  let expanded = null;   /* the one open { row, panel } */
+  const rows = [];
+  let active = -1;       /* index of the row last opened or closed */
+  const collapse = () => {
+    expanded.row.classList.remove("open");
+    expanded.panel.remove();
+    expanded = null; lookup = null; strokeHero = null; strokeRun = null;
+  };
+  ids.forEach(id => {
+    const w = BY_ID.get(id);
+    if (!w) return;
+    const row = el("button", { class: "row", onclick: () => {
+      active = rows.indexOf(row);
+      const reopening = expanded && expanded.row === row;
+      if (expanded) {
+        /* A panel above this row is about to vanish: keep the row under the pointer. */
+        const top = row.getBoundingClientRect().top;
+        collapse();
+        scrollBy(0, row.getBoundingClientRect().top - top);
+      }
+      if (reopening) return;
+      row.classList.add("open");
+      lookup = w;
+      const big = el("div", { class: "panelword" + (w.word.length > 5 ? " long" : ""), lang: "ja" }, linkedWord(w, false));
+      const panel = el("div", { class: "more" }, big,
+        el("div", { class: "reading", lang: "ja" }, look("look", wordUrl(w), w.kana)),
+        el("div", { class: "empty" }, "N" + w.level + (w.rank ? " · frequency #" + w.rank : "")));
+      const status = el("p", { class: "empty" }, "Loading examples…");
+      panel.append(status);
+      row.after(panel);
+      expanded = { row, panel };
+      strokeHero = big;
+      drawWord(big, true);
+      fetchSentences(w, 5).then(found => {
+        status.remove();
+        if (!found.length) return panel.append(el("p", { class: "empty" }, "No example sentences found."));
+        found.forEach((s, i) => panel.append(el("div", { class: "ex" },
+          el("div", { class: "jp", lang: "ja", onclick: e => {   /* touch has no shift+digit: a tap shows the translation */
+            if (lastPointer === "touch" && !e.target.closest("a, button")) e.currentTarget.parentNode.classList.toggle("showTrans");
+            else selectSentence(e);
+          } },
+            el("button", { class: "say", ariaLabel: "Read sentence " + (i + 1) + " aloud", title: "Read aloud", onclick: () => say(s.text) },
+              el("span", null, String(i + 1))),
+            renderSentence(s, true, w)),
+          sentenceEnglish(s))));
+      }).catch(() => { status.textContent = "Couldn't load examples."; });
+    } },
+      el("span", { class: "w", lang: "ja" }, w.word),
+      el("span", { class: "c" }, w.gloss),
+      reviewStatus(w));
+    rows.push(row);
+    list.append(row);
+  });
+  /* Fonts, wrapping, zoom or a late panel can all move the row after the first scroll. */
+  new ResizeObserver(pin).observe(list);
+  const stepRow = by => {
+    const row = rows[active < 0 ? (by > 0 ? 0 : rows.length - 1) : active + by];
+    if (!row) { if (by < 0) { unpin(); scrollTo(0, 0); } return; }   /* past the top: back to the heatmap */
+    row.click();
+    row.focus({ preventScroll: true });
+    pinned = row;
+    pin();
+  };
+  list.append(el("p", { class: "credit" }, "Stroke order: AnimCJK (Arphic Public License). Sentences: Tatoeba (CC BY 2.0 FR). Translations: Google Translate. Words: JLPT lists via Jamie Sinclair."));
+  app.append(list);
+  document.getElementById("label").replaceChildren(el("a", { href: "#", style: "text-decoration:none" }, "← Back"));
+  keys = e => {
+    if (e.key === "Escape") location.hash = "";
+    else if (e.key === "ArrowLeft") stepWeek(-1);
+    else if (e.key === "ArrowRight") stepWeek(1);
+    else if (e.key === "ArrowDown") stepRow(1);
+    else if (e.key === "ArrowUp") stepRow(-1);
+    else if (/^Digit[1-9]$/.test(e.code) && expanded) {
+      const ex = expanded.panel.querySelectorAll(".ex")[e.code.slice(5) - 1];
+      if (!ex) return;
+      if (e.shiftKey) ex.classList.toggle("showTrans");
+      else ex.querySelector(".say").click();
+    }
+    else return false;
+  };
+  touch = { left: () => stepWeek(1), right: () => stepWeek(-1) };
+}
+
+/* ---------- listening review ---------- */
+const LISTEN_SIZE = 10;
+let listening = null;   /* { cards, at }; at -1 is the intro, past the end is the finish */
+/* One sentence per word this week, going back for seconds only if the week is short. */
+function listenCards() {
+  const week = weekList().pop(), data = window.SENTENCES, seen = new Set();
+  if (!week || !data) return [];
+  return shuffle(week.ids)
+    .flatMap(id => shuffle(data.w[id] || []).map((ref, pass) => ({ w: BY_ID.get(id), ref, pass })))
+    .filter(card => card.w)
+    .sort((a, b) => a.pass - b.pass)
+    .filter(card => !seen.has(card.ref[0]) && seen.add(card.ref[0]))
+    .slice(0, LISTEN_SIZE)
+    .map(({ w, ref }) => {
+      const s = sentenceFrom(ref);
+      return { w, s, translated: googleTranslate(s) };
+    });
+}
+function nextListen() {
+  if (listening.at >= listening.cards.length) listening = { cards: listenCards(), at: 0 };
+  else listening.at++;
+  render();
+}
+function prevListen() {
+  if (listening.at < 1) return;
+  listening.at--;
+  render();
+}
+function renderListen() {
+  document.getElementById("label").replaceChildren(el("a", { href: "#", style: "text-decoration:none" }, "← Back"));
+  if (!listening) {
+    app.append(el("main", null, el("div", { class: "empty" }, "Loading…")));
+    sentencesReady.then(() => {
+      listening = { cards: listenCards(), at: -1 };
+      if (location.hash === "#listen") render();
+    });
+    return;
+  }
+  const { cards, at } = listening;
+  const leave = () => { location.hash = ""; };
+  if (!cards.length) {
+    keys = e => { if (e.key === "Escape") leave(); else return false; };
+    return app.append(el("main", null, el("div", { class: "empty" }, "No sentences for this week's words yet.")));
+  }
+  if (at < 0 || at >= cards.length) {
+    const finished = at >= 0;
+    keys = e => {
+      if (e.key === "ArrowRight" || (e.key === " " && !finished)) nextListen();
+      else if (e.key === "ArrowLeft") prevListen();
+      else if (e.key === "Escape") leave();
+      else return false;
+    };
+    touch = { left: nextListen, right: prevListen };
+    if (!finished) aivis(cards[0].s.text);
+    return app.append(el("main", null,
+      el("div", { class: "hero", lang: "ja" }, finished ? "おわり" : "聞き取り"),
+      el("div", { class: "note" }, finished
+        ? "→ for " + LISTEN_SIZE + " more · ← back · esc to leave"
+        : cards.length + " sentences · → next · ← back · space replays · ↓ text, then translation · ↑ hides"),
+      el("div", { class: "actions hotkeys" }, action(finished ? "Again" : "Start", "→", nextListen))));
+  }
+  const shown = cards[at], { w, s, translated } = shown;   /* shown.text and .trans persist across arrows */
+  const answer = el("div", { class: "answer" });
+  translated.then(() => answer.append(sentenceEnglish(s)));
+  const card = el("main", { class: "listen" },
+    el("div", { class: "hero sentence", lang: "ja", onclick: selectSentence }, renderSentence(s, true, w)),
+    answer,
+    el("div", { class: "actions hotkeys" },
+      action("Replay", " ", speak, "space"),
+      action("Show", "↓", () => reveal(1)),
+      action("Hide", "↑", () => reveal(-1)),
+      action("Back", "←", prevListen),
+      action("Next", "→", nextListen)),
+    el("div", { class: "note" }, (at + 1) + " / " + cards.length));
+  const paint = () => {
+    card.classList.toggle("showText", !!shown.text);
+    card.classList.toggle("showTrans", !!shown.trans);
+  };
+  /* Three steps: nothing, text, text and translation. ↓ goes one further, ↑ one back. */
+  const reveal = by => {
+    const level = Math.max(0, Math.min(2, (shown.trans ? 2 : shown.text ? 1 : 0) + by));
+    shown.text = level > 0;
+    shown.trans = level > 1;
+    paint();
+  };
+  paint();
+  lookup = w;
+  spokenSentence = s.text;
+  keys = e => {
+    if (e.key === "ArrowRight") nextListen();
+    else if (e.key === "ArrowLeft") prevListen();
+    else if (e.key === " ") speak();
+    else if (e.key === "ArrowDown") reveal(1);
+    else if (e.key === "ArrowUp") reveal(-1);
+    else if (e.key === "Escape") leave();
+    else return false;
+  };
+  touch = { left: nextListen, right: prevListen, down: () => reveal(1), up: () => reveal(-1) };
+  app.append(card);
+  say(s.text);
+  if (cards[at + 1]) aivis(cards[at + 1].s.text);   /* ready before → is pressed */
+}
+
+/* ---------- chrome ---------- */
+function applyTheme() {
+  if (S.theme) document.documentElement.dataset.theme = S.theme;
+  else delete document.documentElement.dataset.theme;
+}
+function toggleStrokes() {
+  S.strokes = !S.strokes;
+  save();
+  document.getElementById("strokeBtn").classList.toggle("on", S.strokes);
+  if (strokeHero) showStrokes(strokeHero);
+}
+function cycleStrokeSpeed() {
+  const names = Object.keys(STROKE_SPEEDS);
+  S.strokeSpeed = names[(names.indexOf(S.strokeSpeed) + 1) % names.length];
+  save();
+  document.getElementById("speedBtn").textContent = S.strokeSpeed;
+  if (strokeHero) drawWord(strokeHero, true);
+}
+function applyFont() {
+  if (!FONTS.includes(S.font)) S.font = FONTS[0];   /* e.g. a retired style */
+  document.documentElement.dataset.font = S.font;
+  document.getElementById("fontBtn").textContent = S.font;
+}
+function cycleFont() {
+  S.font = FONTS[(FONTS.indexOf(S.font) + 1) % FONTS.length];
+  save();
+  applyFont();
+  if (strokeHero) restWord(strokeHero);
+}
+function toggleZen() {
+  S.plain = !S.plain;
+  save();
+  document.body.classList.toggle("zen", !S.plain);
+}
+function toggleTheme() {
+  const dark = S.theme ? S.theme === "dark" : matchMedia("(prefers-color-scheme: dark)").matches;
+  S.theme = dark ? "light" : "dark";
+  save();
+  applyTheme();
+}
+/* ---------- grammar explainer ---------- */
+const plainJa = node => {      /* text without furigana */
+  const copy = node.cloneNode(true);
+  copy.querySelectorAll("rt, rp").forEach(n => n.remove());
+  return copy.textContent;
+};
+/* The selection, as offsets into its sentence's plain text. With no selection, the whole sentence. */
+function explainTarget() {
+  const sel = getSelection();
+  const node = sel.rangeCount ? sel.getRangeAt(0).commonAncestorContainer : null;
+  const box = node && (node.nodeType === 1 ? node : node.parentElement).closest(".asWord, .asKanji");
+  if (box) {
+    const range = sel.getRangeAt(0), before = document.createRange();
+    before.setStart(box, 0);
+    before.setEnd(range.startContainer, range.startOffset);
+    const sentence = plainJa(box);
+    const start = plainJa(before.cloneContents()), picked = plainJa(range.cloneContents()).trim();
+    if (picked && picked !== sentence.trim()) return { sentence, start: start.length, end: start.length + picked.length };
+    return { sentence };
+  }
+  return spokenSentence ? { sentence: spokenSentence } : null;
+}
+/* e: Claude, through tools/explain_server.py (claude -p), in a panel over the footer. */
+const EXPLAINER = "http://127.0.0.1:10102/explain";
+const explained = new Map();   /* "sentence\u0000start\u0000end" -> explanation */
+let explaining = null;         /* AbortController of the request on screen */
+function closeExplain() {
+  if (explaining) explaining.abort();
+  explaining = null;
+  document.getElementById("explain").hidden = true;
+}
+async function explain() {
+  const box = document.getElementById("explain");
+  if (!box.hidden) return closeExplain();
+  const t = explainTarget();
+  if (!t) return;
+  const part = t.start === undefined ? null : t.sentence.slice(t.start, t.end);
+  const out = el("div");
+  box.replaceChildren(el("div", { class: "q", lang: "ja" },
+    part ? [t.sentence.slice(0, t.start), el("b", null, part), t.sentence.slice(t.end)] : t.sentence), out);
+  box.hidden = false;
+  const cacheKey = [t.sentence, t.start, t.end].join("\u0000");
+  if (explained.has(cacheKey)) return void (out.textContent = explained.get(cacheKey));
+  out.textContent = "…";
+  const ctl = explaining = new AbortController();
+  try {
+    const res = await fetch(EXPLAINER, {
+      method: "POST", signal: ctl.signal, headers: { "content-type": "application/json" },
+      body: JSON.stringify(part ? t : { sentence: t.sentence }),
+    }).catch(() => { throw new Error("The explainer isn't running. Start it with: python3 tools/explain_server.py"); });
+    if (!res.ok) throw new Error("explainer " + res.status + ": " + await res.text());
+    const reader = res.body.pipeThrough(new TextDecoderStream()).getReader();
+    let text = "";
+    for (;;) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      out.textContent = text += value;
+    }
+    if (text) explained.set(cacheKey, text);
+    else out.textContent = "(no answer)";
+  } catch (err) {
+    if (ctl.signal.aborted) return;
+    out.replaceChildren(el("span", { class: "err" }, String(err.message || err)));
+  } finally {
+    if (explaining === ctl) explaining = null;
+  }
+}
+/* E: Google AI Mode in a new tab. udm=50 is AI Mode; Google may change it, in which case this lands on ordinary results. */
+function explainGoogle() {
+  const t = explainTarget();
+  if (!t) return;
+  const part = t.start === undefined ? null : t.sentence.slice(t.start, t.end);
+  const ask = part
+    ? "Concisely explain in English 「" + part + "」 in this Japanese sentence (pattern, reading, meaning here): " +
+      t.sentence.slice(0, t.start) + "<<" + part + ">>" + t.sentence.slice(t.end)
+    : "Concisely explain in English the grammar of this Japanese sentence: " + t.sentence;
+  window.open("https://www.google.com/search?udm=50&q=" + encodeURIComponent(ask), "_blank", "noopener");
+}
+/* ---------- touch ---------- */
+/* Swipes and taps call the view's `touch` handlers, the way keys call `keys`.
+   Touch events, not pointer events, so a vertical scroll never cancels the gesture. */
+const SWIPE_MIN = 50, SWIPE_MS = 700, EDGE = 24;
+let lastPointer = "mouse", swipe = null;
+addEventListener("pointerdown", e => { lastPointer = e.pointerType; }, { capture: true, passive: true });
+const swipeCard = () => app.querySelector("main");
+function dropSwipe(settle) {
+  const card = swipe && swipe.card;
+  swipe = null;
+  if (!card || !card.isConnected) return;
+  card.classList.remove("dragging");
+  if (settle) card.classList.add("settling");
+  card.style.transform = card.style.opacity = "";
+}
+app.addEventListener("touchstart", e => {
+  dropSwipe(false);
+  const t = e.touches[0];
+  if (e.touches.length !== 1 || !touch) return;
+  if (t.clientX < EDGE || t.clientX > innerWidth - EDGE) return;   /* the browser's own back/forward swipes */
+  if (e.target.closest("input, .scroller")) return;                /* typing, and the heatmap's sideways scroll */
+  swipe = { x: t.clientX, y: t.clientY, at: Date.now(), scroll: scrollY, card: swipeCard() };
+}, { passive: true });
+app.addEventListener("touchmove", e => {
+  if (!swipe || !swipe.card) return;
+  const t = e.touches[0], dx = t.clientX - swipe.x, dy = t.clientY - swipe.y;
+  /* The card follows the finger only toward a side that does something. */
+  if (Math.abs(dx) > Math.abs(dy) && touch && touch[dx > 0 ? "right" : "left"]) {
+    swipe.card.classList.remove("settling");
+    swipe.card.classList.add("dragging");
+    swipe.card.style.transform = "translateX(" + dx * 0.5 + "px)";
+    swipe.card.style.opacity = Math.max(0.4, 1 - Math.abs(dx) / 500);
+  } else if (swipe.card.style.transform) {
+    swipe.card.style.transform = swipe.card.style.opacity = "";
+  }
+}, { passive: true });
+app.addEventListener("touchend", e => {
+  if (!swipe) return;
+  const t = e.changedTouches[0], dx = t.clientX - swipe.x, dy = t.clientY - swipe.y;
+  const quick = Date.now() - swipe.at < SWIPE_MS, still = scrollY === swipe.scroll;
+  let dir = null;
+  if (Math.abs(dx) >= SWIPE_MIN && Math.abs(dx) > 1.5 * Math.abs(dy)) dir = dx > 0 ? "right" : "left";
+  else if (still && Math.abs(dy) >= SWIPE_MIN && Math.abs(dy) > 1.5 * Math.abs(dx)) dir = dy > 0 ? "down" : "up";
+  const handler = quick && dir && touch && touch[dir];
+  dropSwipe(!handler);
+  if (handler) handler();
+}, { passive: true });
+app.addEventListener("touchcancel", () => dropSwipe(true), { passive: true });
+/* A tap anywhere on an unrevealed card reveals it, instead of following the word's Jisho link. */
+app.addEventListener("click", e => {
+  if (lastPointer !== "touch" || !touch || !touch.tap) return;
+  if (!e.target.closest("main") || e.target.closest("button, input")) return;
+  e.preventDefault();
+  e.stopPropagation();
+  touch.tap();
+}, true);
+
+/* ---------- GitHub sync ---------- */
+/* The whole state is one JSON file in a (private) GitHub repo. Each push is a commit through the
+   contents API, so the repo's history is a backup. Pull on open and on return to the tab; push a
+   little after the last answer, and when the tab is hidden. */
+const SYNC_DELAY = 20000;
+const isDirty = () => !syncCfg.syncedAt || (S.savedAt || 0) > syncCfg.syncedAt;
+const saveSyncCfg = () => { try { localStorage.setItem(SYNC_KEY, JSON.stringify(syncCfg)); } catch {} };
+function syncStatus(state, detail) {
+  const button = document.getElementById("syncBtn");
+  button.textContent = { off: "sync", pending: "sync •", busy: "sync …", ok: "synced", err: "sync !" }[state];
+  button.classList.toggle("err", state === "err");
+  button.title = detail || "Sync to GitHub (y; Y for settings)";
+}
+function scheduleSync() {
+  if (!syncCfg) return;
+  clearTimeout(syncTimer);
+  syncTimer = setTimeout(syncNow, SYNC_DELAY);
+  if (!syncing) syncStatus("pending");
+}
+function deviceName() {
+  const ua = navigator.userAgent;
+  if (/iPad/.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1)) return "iPad";
+  return (ua.match(/iPhone|Android|Macintosh|Windows|Linux/) || ["browser"])[0].replace("Macintosh", "Mac");
+}
+function toBase64(text) {
+  const bytes = new TextEncoder().encode(text);
+  let bin = "";
+  for (let i = 0; i < bytes.length; i += 0x8000) bin += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
+  return btoa(bin);
+}
+const fromBase64 = b64 => new TextDecoder().decode(Uint8Array.from(atob(b64.replace(/\s/g, "")), c => c.charCodeAt(0)));
+async function github(method, body, accept) {
+  const path = syncCfg.path.split("/").map(encodeURIComponent).join("/");
+  const res = await fetch("https://api.github.com/repos/" + syncCfg.repo + "/contents/" + path, {
+    method, cache: "no-store", body: body && JSON.stringify(body),
+    headers: { authorization: "Bearer " + syncCfg.token, accept: accept || "application/vnd.github+json" },
+  });
+  if (res.ok || (method === "GET" && res.status === 404) || (method === "PUT" && (res.status === 409 || res.status === 422))) return res;
+  let message = "";
+  try { message = (await res.json()).message; } catch {}
+  throw new Error("GitHub " + res.status + (message ? ": " + message : ""));
+}
+async function fetchRemote() {
+  const res = await github("GET");
+  if (res.status === 404) return null;
+  const meta = await res.json();
+  /* Files over 1 MB come without their content inlined. */
+  const text = meta.content ? fromBase64(meta.content) : await (await github("GET", null, "application/vnd.github.raw+json")).text();
+  return { sha: meta.sha, data: JSON.parse(text) };
+}
+async function pushState() {
+  const pushedAt = S.savedAt || Date.now();
+  const body = { message: "sync from " + deviceName(), content: toBase64(JSON.stringify(S, null, 1) + "\n") };
+  if (syncCfg.sha) body.sha = syncCfg.sha;
+  const res = await github("PUT", body);
+  if (!res.ok) return false;   /* someone else committed first */
+  syncCfg.sha = (await res.json()).content.sha;
+  syncCfg.syncedAt = pushedAt;
+  saveSyncCfg();
+  return true;
+}
+/* Both devices answered since the last sync: keep every answer from both. */
+function mergeStates(a, b) {
+  const [older, newer] = (a.savedAt || 0) > (b.savedAt || 0) ? [b, a] : [a, b];
+  const m = { ...older, ...newer };   /* settings, history and the rest: the newer device's */
+  m.status = { ...older.status, ...newer.status };
+  m.results = { ...older.results };
+  for (const [id, r] of Object.entries(newer.results || {}))
+    if (!m.results[id] || r.total >= m.results[id].total) m.results[id] = r;
+  m.log = { ...older.log };
+  for (const [day, n] of Object.entries(newer.log || {})) m.log[day] = Math.max(m.log[day] || 0, n);
+  const byStart = (x, y) => x.start < y.start ? -1 : x.start > y.start ? 1 : 0;
+  const weekProgress = w => (w.ready ? 1e6 : 0) + w.ids.length + (w.skipped || 0);
+  const weeks = [older.week, newer.week].filter(Boolean);
+  m.week = weeks.length === 2 && weeks[0].start === weeks[1].start
+    ? (weekProgress(weeks[0]) > weekProgress(weeks[1]) ? weeks[0] : weeks[1])
+    : weeks.sort(byStart).pop() || null;
+  const past = new Map();
+  for (const w of [...(older.weeks || []), ...(newer.weeks || []), ...weeks])
+    if (w && w.ids.length && (!m.week || w.start !== m.week.start)) past.set(w.start, { start: w.start, ids: w.ids });
+  m.weeks = [...past.values()].sort(byStart);
+  const dayProgress = d => d.round * 1e6 + d.cleared.length + d.missed.length;
+  const days = [older.day, newer.day].filter(Boolean);
+  m.day = days.length === 2 && days[0].date === days[1].date
+    ? (dayProgress(days[0]) > dayProgress(days[1]) ? days[0] : days[1])
+    : days.sort((x, y) => x.date < y.date ? -1 : 1).pop() || null;
+  return m;
+}
+/* Replace the state in place (S is const) and redraw. */
+function adopt(data, changed) {
+  Object.keys(S).forEach(k => delete S[k]);
+  Object.assign(S, structuredClone(DEFAULTS), data);
+  if (changed) S.savedAt = Date.now();
+  try { localStorage.setItem(STORE_KEY, JSON.stringify(S)); } catch {}
+  paintChrome();
+  render();
+}
+/* Pull, merge if both sides changed, push if this side has news. Callable from JS: vocabSync.now(). */
+function syncNow() {
+  if (!syncCfg) return setupSync();
+  clearTimeout(syncTimer);
+  if (syncing) return syncing;
+  syncStatus("busy");
+  syncing = (async () => {
+    for (let attempt = 0; attempt < 3; attempt++) {
+      const remote = await fetchRemote();
+      if (!remote) syncCfg.sha = null;
+      else if (remote.sha !== syncCfg.sha) {
+        const mine = isDirty() && Object.keys(S.status).length > 0;
+        adopt(mine ? mergeStates(S, remote.data) : remote.data, mine);
+        syncCfg.sha = remote.sha;
+        if (!mine) syncCfg.syncedAt = S.savedAt || 1;
+        saveSyncCfg();
+      }
+      if (!isDirty() || await pushState()) return;
+    }
+    throw new Error("GitHub kept changing underneath; try again");
+  })();
+  return syncing.then(() => {
+    syncing = null;
+    syncStatus("ok", "Synced with " + syncCfg.repo + " at " + new Date().toLocaleTimeString() + " (y; Y for settings)");
+    if (isDirty()) scheduleSync();   /* answered while it was syncing */
+  }, err => {
+    syncing = null;
+    syncStatus("err", String(err.message || err) + " — tap to retry or change settings");
+    console.warn("sync:", err);
+  });
+}
+function setupSync() {
+  const repo = prompt("Sync to GitHub: repository as owner/name (make it private). Leave empty to turn sync off.", syncCfg ? syncCfg.repo : "");
+  if (repo === null) return;
+  if (!repo.trim()) {
+    syncCfg = null;
+    try { localStorage.removeItem(SYNC_KEY); } catch {}
+    return syncStatus("off");
+  }
+  const token = prompt("Fine-grained personal access token with Contents: read and write on " + repo.trim() + " only." +
+    (syncCfg ? " Leave empty to keep the current one." : ""), "");
+  if (token === null || (!token.trim() && !syncCfg)) return;
+  const path = prompt("File in the repo", syncCfg ? syncCfg.path : "vocab-drill.json");
+  if (path === null) return;
+  const same = syncCfg && syncCfg.repo === repo.trim() && syncCfg.path === (path.trim() || "vocab-drill.json");
+  syncCfg = {
+    repo: repo.trim(), path: path.trim() || "vocab-drill.json",
+    token: token.trim() || syncCfg.token,
+    sha: same ? syncCfg.sha : null, syncedAt: same ? syncCfg.syncedAt : 0,
+  };
+  saveSyncCfg();
+  return syncNow();
+}
+function clickSync() {
+  if (document.getElementById("syncBtn").classList.contains("err")
+      && confirm(document.getElementById("syncBtn").title.replace(/ — .*$/, "") + "\n\nChange sync settings? (Cancel retries.)")) return setupSync();
+  syncNow();
+}
+window.vocabSync = { now: syncNow, setup: setupSync, get state() { return S; } };
+
+/* ---------- chrome ---------- */
+function paintChrome() {
+  applyTheme();
+  applyFont();
+  paintSpeed();
+  paintSpeaker();
+  document.getElementById("strokeBtn").classList.toggle("on", S.strokes);
+  document.getElementById("voiceBtn").classList.toggle("on", S.voice);
+  document.getElementById("speedBtn").textContent = S.strokeSpeed;
+}
+const openListen = () => { location.hash = "#listen"; };
+document.getElementById("listenBtn").addEventListener("click", openListen);
+document.getElementById("strokeBtn").addEventListener("click", toggleStrokes);
+document.getElementById("voiceBtn").addEventListener("click", toggleVoice);
+document.getElementById("speakerBtn").addEventListener("click", cycleSpeaker);
+document.getElementById("speedBtnTts").addEventListener("click", () => setSpeed(1));
+document.getElementById("fontBtn").addEventListener("click", cycleFont);
+document.getElementById("speedBtn").addEventListener("click", cycleStrokeSpeed);
+document.getElementById("zenBtn").addEventListener("click", toggleZen);
+document.getElementById("themeBtn").addEventListener("click", toggleTheme);
+document.getElementById("askBtn").addEventListener("click", explainGoogle);
+document.getElementById("syncBtn").addEventListener("click", clickSync);
+paintChrome();
+const holdShift = held => document.body.classList.toggle("shift", held);
+document.addEventListener("keyup", e => { if (e.key === "Shift") holdShift(false); });
+addEventListener("blur", () => holdShift(false));
+document.addEventListener("keydown", e => {
+  if (e.key === "Shift") holdShift(true);
+  if (e.metaKey || e.ctrlKey || e.altKey) return;
+  const typing = e.target.tagName === "INPUT";
+  if (e.key === "Escape" && !document.getElementById("explain").hidden) { e.preventDefault(); return closeExplain(); }
+  if ((e.key === "e" || e.key === "E") && (!typing || e.target.readOnly)) {
+    e.preventDefault();
+    return e.key === "e" ? explain() : explainGoogle();
+  }
+  if (keys && (!typing || e.target.readOnly) && keys(e) !== false) { e.preventDefault(); return; }
+  if ((e.key === "ArrowLeft" || e.key === "ArrowRight") && !location.hash
+      && (!typing || e.target.readOnly || !e.target.value)) {
+    e.preventDefault();
+    return stepHistory(e.key === "ArrowLeft" ? -1 : 1);
+  }
+  if (typing && !e.target.readOnly) return;
+  if (e.key === "l" && lookup) window.open(wordUrl(lookup), "_blank", "noopener");
+  else if (e.key === "L" && lookup) window.open(hasKanji(lookup.word) ? kanjiUrl(lookup.word) : wordUrl(lookup), "_blank", "noopener");
+  else if (e.key === "s" && strokeHero) drawWord(strokeHero, true);
+  else if (e.key === "S") toggleStrokes();
+  else if (e.key === "q") cycleStrokeSpeed();
+  else if (e.key === "r") speak();
+  else if (e.key === "R") toggleVoice();
+  else if (e.key === "c") cycleFont();
+  else if (e.key === "z") toggleZen();
+  else if (e.key === "d") toggleTheme();
+  else if (e.key === "a") openListen();
+  else if (e.key === "v") cycleSpeaker();
+  else if (e.key === "-") setSpeed(speechSpeed() - 0.1);
+  else if (e.key === "=" || e.key === "+") setSpeed(speechSpeed() + 0.1);
+  else if (e.key === "y") syncNow();
+  else if (e.key === "Y") setupSync();
+});
+addEventListener("hashchange", () => { viewedWeek = null; listening = null; render(); });
+document.addEventListener("visibilitychange", () => {
+  if (syncCfg && (document.visibilityState === "visible" || isDirty())) syncNow();   /* pull on return, push on leave */
+  if (document.visibilityState !== "visible" || location.hash) return;
+  const stale = S.day ? S.day.date !== iso(new Date()) : false;
+  if (stale || !S.week || S.week.start !== thisSunday(new Date())) render();
+});
+render();
+if (syncCfg) syncNow();
+</script>
+</body>
+</html>
