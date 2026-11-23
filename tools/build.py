@@ -6,7 +6,7 @@ Usage: python3 -I tools/build.py [source-dir]
 source-dir defaults to data/ and must hold n1.csv..n5.csv from jamsinclair/open-anki-jlpt-decks
 (MIT) and freq.txt from hingston/japanese (44998-japanese-words.txt). Output
 order is N5 to N1, most frequent first within each level, so it is the order
-the Sunday diagnostic walks.
+the diagnostic walks.
 """
 import csv
 import json

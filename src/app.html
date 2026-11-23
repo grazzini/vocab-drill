@@ -119,6 +119,7 @@ svg.acjk path[clip-path] {
 .weeknav button { color: var(--dim); padding: 0 6px; }
 .weeknav button:hover:not(:disabled) { color: var(--ink); }
 .weeknav button:disabled { opacity: .3; cursor: default; }
+.weeknav .over { margin-left: auto; margin-right: 12px; font-size: .95rem; }
 .credit { color: var(--dim); font-size: .85rem; margin-top: 28px; }
 #strokeBtn.on, #voiceBtn.on { color: var(--ink); }
 mark { background: none; color: var(--accent); }
@@ -296,9 +297,18 @@ let syncTimer = null, syncing = null;
 function iso(d) {
   return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
 }
-function thisSunday(now) {
-  const d = new Date(now.getFullYear(), now.getMonth(), now.getDate() - now.getDay());
-  return iso(d);
+/* Days turn over at 5am, so a late-night session still counts toward the day it began. */
+const DAY_STARTS_AT = 5;
+function drillNow() {
+  const d = new Date();
+  d.setHours(d.getHours() - DAY_STARTS_AT);
+  return d;
+}
+function currentDay() {
+  return iso(drillNow());
+}
+function daysBetween(from, to) {
+  return Math.round((new Date(to + "T12:00") - new Date(from + "T12:00")) / 864e5);
 }
 
 /* ---------- helpers ---------- */
@@ -735,30 +745,37 @@ let spokenSentence = null; /* sentence on the current card, read instead of the 
 let peek = null;   /* position in S.history being viewed; null is the live card */
 const HISTORY_SIZE = 200;
 function remember(id) {
-  const today = iso(new Date());
+  const today = currentDay();
   S.log[today] = (S.log[today] || 0) + 1;
   S.history.push(id);
   S.history.splice(0, S.history.length - HISTORY_SIZE);
 }
 const sentences = new Map();   /* in-memory prefetch for upcoming cards */
 
+/* A week starts on whatever day its diagnostic does. Each day after the diagnostic is
+   finished takes the next stage; the day after the last stage starts a new week. */
 function mainMode() {
-  const now = new Date(), today = iso(now), sunday = thisSunday(now);
-  if (!S.week || S.week.start !== sunday) {
-    if (S.week && S.week.ids.length) S.weeks.push({ start: S.week.start, ids: S.week.ids });
-    S.week = { start: sunday, ids: [], ready: false, madeOn: null };
+  const today = currentDay(), w = S.week;
+  const over = w && w.ready && daysBetween(w.madeOn || w.start, today) > STAGES.length;
+  const untouched = w && !w.ready && !w.ids.length && !w.skipped;
+  if (!w || over || (untouched && w.start !== today)) {
+    if (w && w.ids.length) S.weeks.push({ start: w.start, ids: w.ids });
+    S.week = { start: today, ids: [], ready: false, madeOn: null, skipped: 0 };
     undo = null;
     save();
   }
   if (!S.week.ready) return "diag";
-  if (S.week.madeOn === today || now.getDay() === 0) return "done";
+  const stage = daysBetween(S.week.madeOn || S.week.start, today) - 1;
+  if (stage < 0) return "done";
   if (!S.day || S.day.date !== today) {
-    S.day = { date: today, stage: now.getDay() - 1, queue: shuffle(S.week.ids), missed: [], cleared: [], round: 1 };
+    S.day = { date: today, stage, queue: shuffle(S.week.ids), missed: [], cleared: [], round: 1 };
     save();
   }
   return S.day.queue.length || S.day.missed.length ? "review" : "done";
 }
+let renderedOn = null;   /* the day the visible view was built for */
 function render() {
+  renderedOn = currentDay();
   keys = null;
   touch = null;
   lookup = null;
@@ -786,7 +803,7 @@ function updateCount(mode) {
   const count = document.getElementById("count");
   const label = document.getElementById("label");
   let done, total, past = false;
-  const today = S.day && S.day.date === iso(new Date()) ? S.day : null;
+  const today = S.day && S.day.date === currentDay() ? S.day : null;
   if (mode === "diag") { done = S.week.ids.length; total = WEEK_SIZE; }
   else if (today && today.cleared.length) { done = today.cleared.length; total = S.week.ids.length; }
   else if (S.last) { done = S.last.done; total = S.last.total; past = mode !== "done"; }
@@ -794,7 +811,7 @@ function updateCount(mode) {
   count.textContent = done + "/" + total;
   count.classList.toggle("past", past);
   document.getElementById("skipped").textContent = mode === "diag" ? (S.week.skipped || 0) + " skipped" : "";
-  label.textContent = mode === "diag" ? "Sunday diagnostic" : mode === "review" ? STAGES[S.day.stage].label : "";
+  label.textContent = mode === "diag" ? "Diagnostic" : mode === "review" ? STAGES[S.day.stage].label : "";
 }
 
 /* ---------- history (view only) ---------- */
@@ -829,7 +846,7 @@ function nextUnseen() {
 }
 function finishDiag() {
   S.week.ready = true;
-  S.week.madeOn = iso(new Date());
+  S.week.madeOn = currentDay();
   S.last = { done: S.week.ids.length, total: S.week.ids.length };
   undo = null;
   save();
@@ -850,7 +867,7 @@ function undoDiag() {
   if (S.status[undo] === "s") S.week.skipped--;
   if (S.history[S.history.length - 1] === undo) {
     S.history.pop();
-    const today = iso(new Date());
+    const today = currentDay();
     if (S.log[today]) S.log[today]--;
   }
   delete S.status[undo];
@@ -1089,7 +1106,7 @@ function shortDate(text) {
   return new Date(text + "T12:00").toLocaleDateString("en-US", { month: "short", day: "numeric" });
 }
 function renderHeatmap() {
-  const now = new Date(), todayIso = iso(now);
+  const now = drillNow(), todayIso = iso(now);
   const floor = new Date(now.getFullYear(), now.getMonth() - HEAT_MIN_MONTHS, now.getDate(), 12);
   const logged = Object.keys(S.log).sort()[0];
   const first = logged && logged < iso(floor) ? new Date(logged + "T12:00") : floor;
@@ -1158,6 +1175,32 @@ function stepWeek(by) {
   viewedWeek = index === weeks.length - 1 ? null : index;
   render();
 }
+/* Throw away the current week and begin a new diagnostic today. */
+function startOver() {
+  const w = S.week, n = w.ids.length;
+  const words = n === 1 ? "The 1 word" : "The " + n + " words";
+  if (!confirm("Start over with a new week?\n\n" + (n ? words + " you marked as not known will come back in the new diagnostic. " : "")
+    + "Words you skipped stay skipped.")) return;
+  for (const id of w.ids) delete S.status[id];
+  S.week = null; S.day = null; S.last = null;
+  undo = null; viewedWeek = null;
+  save();
+  location.hash = "";
+}
+/* Make a past week's words this week's again, reviewing from the first stage today. */
+function restartWeek(week) {
+  const moving = S.week.ids.length ? " This week's words move to history." : "";
+  if (!confirm("Review the week of " + shortDate(week.start) + " again?\n\nIts " + week.ids.length
+    + " words become this week's, starting today with " + STAGES[0].label + "." + moving)) return;
+  const now = drillNow(), yesterday = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1);
+  S.weeks = S.weeks.filter(w => w !== week);
+  if (S.week.ids.length) S.weeks.push({ start: S.week.start, ids: S.week.ids });
+  S.week = { start: iso(now), ids: week.ids.slice(), ready: true, madeOn: iso(yesterday), skipped: 0 };
+  S.day = null; S.last = null;
+  undo = null; viewedWeek = null;
+  save();
+  location.hash = "";
+}
 function reviewStatus(w) {
   const r = S.results[w.id];
   if (!r) return el("span", { class: "st" });
@@ -1178,7 +1221,12 @@ function renderWeek() {
     el("div", { class: "weeknav" },
       el("button", { ariaLabel: "Previous week", disabled: index <= 0, onclick: () => stepWeek(-1) }, "←"),
       el("h1", null, !week ? "No words yet" : week === S.week ? "This week" : "Week of " + shortDate(week.start)),
-      el("button", { ariaLabel: "Next week", disabled: index >= weeks.length - 1, onclick: () => stepWeek(1) }, "→")));
+      el("button", { ariaLabel: "Next week", disabled: index >= weeks.length - 1, onclick: () => stepWeek(1) }, "→"),
+      week && week !== S.week
+        ? el("button", { class: "over", title: "Review these words again, starting today", onclick: () => restartWeek(week) }, "Restart this week")
+        : S.week.ids.length || S.week.skipped || S.week.ready
+        ? el("button", { class: "over", title: "Discard this week and start a new diagnostic", onclick: startOver }, "Start over")
+        : null));
   let expanded = null;   /* the one open { row, panel } */
   const rows = [];
   let active = -1;       /* index of the row last opened or closed */
@@ -1760,8 +1808,7 @@ addEventListener("hashchange", () => { viewedWeek = null; listening = null; rend
 document.addEventListener("visibilitychange", () => {
   if (syncCfg && (document.visibilityState === "visible" || isDirty())) syncNow();   /* pull on return, push on leave */
   if (document.visibilityState !== "visible" || location.hash) return;
-  const stale = S.day ? S.day.date !== iso(new Date()) : false;
-  if (stale || !S.week || S.week.start !== thisSunday(new Date())) render();
+  if (renderedOn !== currentDay()) render();
 });
 render();
 if (syncCfg) syncNow();
