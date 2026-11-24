@@ -81,11 +81,19 @@ body.weekList footer { display: none; }
 #explain .q b { color: var(--accent); font-weight: normal; }
 #explain .err { color: var(--accent); }
 
+/* Every card has the same four fixed zones, so nothing moves while it changes: the main text,
+   the answer, the controls, and a line of notes. The header and navbar are measured (--headH, --footH). */
+:root { --ans: 10.5rem; --ctl: 3.25rem; --noteH: 1.9rem; }
 main {
-  min-height: 100vh; min-height: 100dvh;
-  display: flex; flex-direction: column; align-items: center; justify-content: center;
-  padding: 72px 16px 72px; text-align: center;
+  height: 100vh; height: 100dvh;
+  display: grid; grid-template-rows: minmax(0, 1fr) var(--ans) var(--ctl) var(--noteH); grid-template-columns: minmax(0, 1fr);
+  padding: var(--headH, 64px) max(16px, env(safe-area-inset-right)) var(--footH, 64px) max(16px, env(safe-area-inset-left));
+  text-align: center;
 }
+main > .pane { display: flex; flex-direction: column; align-items: center; justify-content: safe center; overflow-y: auto; min-height: 0; }
+main > .answer { display: flex; flex-direction: column; align-items: center; justify-content: flex-start; overflow-y: auto; min-height: 0; padding-top: 14px; }
+main > .actions { align-content: center; min-height: 0; }
+main > .note { display: flex; align-items: center; justify-content: center; gap: 18px; min-height: 0; }
 .hero { font-family: var(--ja); font-weight: 400; line-height: 1.35; font-size: min(clamp(4.1rem, 15.6vw, 9rem), var(--fit5)); overflow-wrap: anywhere; }
 .hero:not(.long):not(.en):not(.sentence) { white-space: nowrap; }
 .hero.long { font-size: clamp(2.9rem, 9.6vw, 5.8rem); }
@@ -134,31 +142,36 @@ svg.acjk path[clip-path] {
 .credit { color: var(--dim); font-size: .85rem; margin-top: 28px; }
 #strokeBtn.on, #voiceBtn.on { color: var(--ink); }
 mark { background: none; color: var(--accent); }
-.answer { min-height: 6.5rem; margin-top: 18px; }
 .reading { font-family: var(--ja); font-size: 1.5rem; }
 .gloss { font-size: 1.35rem; max-width: 34em; }
 .trans { color: var(--dim); font-style: italic; }
 a.src { color: var(--dim); opacity: .6; font-style: normal; font-size: .8em; text-decoration: none; margin-left: 4px; }
 a.src:hover { opacity: 1; color: var(--ink); }
-.note { color: var(--dim); font-size: .95rem; min-height: 1.5em; margin-top: 8px; }
-.actions { display: flex; flex-wrap: wrap; gap: 12px 32px; justify-content: center; margin-top: 22px; min-height: 2.6rem; }
-.actions.slots { display: grid; grid-template-columns: repeat(3, minmax(0, 8em)); justify-content: center; justify-items: center; gap: 12px 16px; }
-.actions.aux { margin-top: 10px; min-height: 0; }
+.note { color: var(--dim); font-size: .95rem; }
+.actions { display: flex; flex-wrap: wrap; gap: 12px 32px; justify-content: center; align-items: center; }
+.actions.slots { display: grid; grid-template-columns: repeat(3, minmax(0, 8em)); justify-content: center; justify-items: center; gap: 4px 16px; }
+.actions.slots.many { grid-template-columns: repeat(6, minmax(0, 7em)); }
+.actions.slots.five { grid-template-columns: repeat(5, minmax(0, 6.5em)); column-gap: 6px; }
+@media (max-width: 640px) {
+  .actions.slots.many { grid-template-columns: repeat(3, minmax(0, 7em)); }
+  main:has(.many) { --ctl: 6.75rem; }
+}
 .act { padding: 6px 2px; border-bottom: 1px solid var(--line); }
 .act:hover { border-color: var(--ink); }
 .act kbd { font: inherit; color: var(--dim); font-size: .85em; margin-left: 6px; }
-.choices { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; width: min(560px, 100%); margin-top: 34px; }
-.choice { font-family: var(--ja); font-size: clamp(1.3rem, 4vw, 1.8rem); padding: 14px 8px; border: 1px solid var(--line); overflow-wrap: anywhere; }
+.choices { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; width: min(560px, 100%); }
+.choice { font-family: var(--ja); font-size: clamp(1.3rem, 4vw, 1.8rem); padding: 9px 8px; border: 1px solid var(--line); overflow-wrap: anywhere; }
 .choice:hover:not(:disabled) { border-color: var(--ink); }
 .choice.right { border-color: var(--good); color: var(--good); }
 .choice.wrong { border-color: var(--accent); color: var(--accent); }
 .typed {
   font: 400 clamp(1.8rem, 6vw, 3rem) var(--ja); color: var(--ink); text-align: center;
   background: none; border: 0; border-bottom: 1px solid var(--line); border-radius: 0;
-  width: min(460px, 100%); margin-top: 34px; padding: 6px;
+  width: min(460px, 100%); margin-top: 24px; padding: 6px;
 }
 .typed:focus { outline: 0; border-color: var(--ink); }
 .typed.wrong { color: var(--accent); text-decoration: line-through; }
+.answer .hero.long { font-size: clamp(2.2rem, 6vw, 3.4rem); }
 
 body.zen:not(.listing) header #label, body.zen footer { opacity: 0; }
 body.zen footer:hover, body.zen footer:focus-within { opacity: 1; }
@@ -166,8 +179,10 @@ body.zen #count { color: var(--dim); }
 body.zen .act kbd, body.zen .level { display: none; }
 /* Hotkeys only in zen, except on touch screens, which have no keyboard. */
 @media (hover: hover) and (pointer: fine) {
-  body.zen .actions.hotkeys { visibility: hidden; }
+  body.zen .actions.hotkeys, body.zen .cheat { visibility: hidden; }
 }
+/* Controls whose every action has a gesture: zen hides them on touch screens too (all but .stay). */
+body.zen .actions.gestures > :not(.stay), body.zen .cheat { visibility: hidden; }
 body.zen .hero:not(.en):not(.sentence):not(.long) { font-size: min(clamp(5.3rem, 21.6vw, 13.2rem), var(--fit5)); }
 body.zen .hero.en { font-size: clamp(3.1rem, 9.6vw, 6.5rem); }
 /* Touch: bigger targets, no key hints, and a zen footer that can be seen before it is tapped. */
@@ -176,7 +191,6 @@ body.zen .hero.en { font-size: clamp(3.1rem, 9.6vw, 6.5rem); }
   footer { gap: 2px 6px; padding-top: 8px; }
   footer button { padding: 8px 6px; }
   body.zen footer { opacity: .45; }
-  main { padding-bottom: 128px; }
   .act { padding: 10px 8px; }
   .act kbd { display: none; }
   .actions { gap: 8px 24px; }
@@ -843,10 +857,11 @@ function renderPeek() {
   const hero = el("div", { class: heroClass(w.word), lang: "ja" }, linkedWord(w, false));
   lookup = w;
   document.getElementById("label").textContent = "History";
-  app.append(el("main", null, hero,
+  app.append(card(hero,
     el("div", { class: "answer" },
       el("div", { class: "reading" }, w.kana),
       el("div", { class: "gloss" }, w.gloss)),
+    null,
     el("div", { class: "note level" }, (S.history.length - peek) + " back")));
   showStrokes(hero);
   announce();
@@ -893,7 +908,7 @@ function renderDiag() {
   const w = nextUnseen();
   if (!w) {
     if (S.week.ids.length) return finishDiag();
-    return app.append(el("main", null, el("div", { class: "hero long" }, "皆伝"), el("div", { class: "done-en" }, "That's the whole list.")));
+    return app.append(card([el("div", { class: "hero long" }, "皆伝"), el("div", { class: "done-en" }, "That's the whole list.")]));
   }
   const answer = el("div", { class: "answer" });
   /* Furigana is always laid out and only hidden, so toggling moves nothing. */
@@ -902,8 +917,11 @@ function renderDiag() {
   lookup = w;
   /* Swipe right like j (skip, already known), left like k (keep); a tap reveals. */
   const gestures = touch = { right: () => answerDiag(w, "s"), left: () => answerDiag(w, "w"), up: speak, down: () => stepHistory(-1) };
+  /* A tap on the word: its furigana before the answer is shown, its stroke order after. */
+  gestures.word = toggleFurigana;
   const reveal = () => {
-    gestures.tap = null;   /* revealed: taps reach the Jisho links again */
+    gestures.tap = () => {};
+    gestures.word = () => drawWord(hero, true);
     answer.replaceChildren(
       el("div", { class: "reading" }, w.kana),
       el("div", { class: "gloss" }, w.gloss));
@@ -918,19 +936,30 @@ function renderDiag() {
     else return false;
   };
   gestures.tap = reveal;
-  app.append(el("main", null,
-    hero,
-    answer,
-    el("div", { class: "actions hotkeys" },
+  app.append(card(hero, answer,
+    el("div", { class: "actions hotkeys slots many gestures" },
       action("Show", " ", reveal, "space"),
       action("Furigana", "f", toggleFurigana),
       action("Strokes", "s", () => drawWord(hero, true)),
       action("Skip", "j", () => answerDiag(w, "s")),
       action("Keep", "k", () => answerDiag(w, "w")),
-      undo ? action("Undo", "u", undoDiag) : null),
+      undo ? stay(action("Undo", "u", undoDiag)) : el("span")),
     el("div", { class: "note level" }, "N" + w.level)));
   showStrokes(hero);
   warmStrokes(WORDS.find(o => o !== w && !S.status[o.id]));
+}
+/* The four zones of a card; pass the zones' own elements, or leave them out for empty ones. */
+function card(pane, answer, controls, note, cls) {
+  return el("main", cls ? { class: cls } : null,
+    el("div", { class: "pane" }, pane),
+    answer || el("div", { class: "answer" }),
+    controls || el("div", { class: "actions" }),
+    note || el("div", { class: "note" }));
+}
+/* A control with no gesture, so zen keeps it on screen. */
+function stay(node) {
+  node.classList.add("stay");
+  return node;
 }
 function action(text, key, handler, keyName) {
   return el("button", { class: "act", onclick: handler }, text, el("kbd", null, keyName || key));
@@ -977,17 +1006,19 @@ function renderRecognition(w, stage, note) {
   lookup = w;
   const answer = el("div", { class: "answer" });
   /* Three fixed slots, so Got it never moves: Show | Got it | – becomes Repeat | Got it | Missed. */
-  const buttons = el("div", { class: "actions hotkeys slots" });
+  const buttons = el("div", { class: "actions hotkeys slots gestures" });
   const cheat = () => front.classList.toggle("hidekey");
-  const aux = stage.furigana ? null : el("div", { class: "actions hotkeys aux" }, action("Furigana", "f", cheat));
-  const info = el("div", { class: "note" }, note);
+  const aux = stage.furigana ? null : action("Furigana", "f", cheat);
+  if (aux) aux.classList.add("cheat");
+  const info = el("span", null, note);
   let sentence = null, shown = false;
   /* Swipe right like j (got it); left reveals, then counts as k (missed). */
   const gestures = touch = { right: () => grade(w, true), left: () => shown ? grade(w, false) : reveal(), up: speak, down: () => stepHistory(-1) };
   const reveal = () => {
     if (shown) return;
     shown = true;
-    gestures.tap = gestures.word = null;
+    gestures.tap = speak;   /* revealed: a tap repeats */
+    gestures.word = null;
     answer.replaceChildren(
       el("div", { class: "reading" }, w.kana),
       el("div", { class: "gloss" }, w.gloss),
@@ -1009,7 +1040,7 @@ function renderRecognition(w, stage, note) {
   };
   gestures.tap = reveal;
   if (aux) gestures.word = cheat;   /* tapping the key word peeks at its furigana */
-  app.append(el("main", null, front, answer, buttons, aux, info));
+  app.append(card(front, answer, buttons, el("div", { class: "note" }, aux, info)));
   if (!stage.context) showStrokes(front);
   else {
     front.style.visibility = "hidden";
@@ -1044,7 +1075,7 @@ function distractors(w) {
 }
 function renderChoice(w, note) {
   const options = shuffle([w, ...distractors(w)]);
-  const buttons = el("div", { class: "actions" });
+  const buttons = el("div", { class: "actions hotkeys gestures" });
   let settled = false;
   const pick = (o, node) => {
     if (settled) return;
@@ -1057,7 +1088,8 @@ function renderChoice(w, note) {
     if (!correct) node.classList.add("wrong");
     buttons.replaceChildren(action("Next", "Enter", () => grade(w, correct), "enter"));
     keys = e => { if (e.key === "Enter" || e.key === " ") grade(w, correct); else return false; };
-    touch = { left: () => grade(w, correct), right: () => grade(w, correct), up: speak, down: () => stepHistory(-1) };
+    const next = () => grade(w, correct);
+    touch = { left: next, right: next, up: speak, down: () => stepHistory(-1), tap: next };
     lookup = w;
     info.replaceChildren(el("span", { lang: "ja" }, linkedWord(w, false), " ", w.kana));
     announce();
@@ -1073,7 +1105,7 @@ function renderChoice(w, note) {
     pick(options[i], grid.children[i]);
   };
   touch = { down: () => stepHistory(-1) };
-  app.append(el("main", null, el("div", { class: "hero en" }, w.gloss), grid, buttons, info));
+  app.append(card(el("div", { class: "hero en" }, w.gloss), el("div", { class: "answer" }, grid), buttons, info));
 }
 function renderType(w, note) {
   const bare = s => s.replace(/[～~\s　]/g, "");
@@ -1081,7 +1113,7 @@ function renderType(w, note) {
   const input = el("input", { class: "typed", lang: "ja", autocomplete: "off", autocapitalize: "off", spellcheck: false, ariaLabel: "Japanese" });
   input.setAttribute("autocorrect", "off");
   const answer = el("div", { class: "answer" });
-  const buttons = el("div", { class: "actions" });
+  const buttons = el("div", { class: "actions hotkeys gestures" });
   let settled = false;
   const settle = correct => {
     settled = true;
@@ -1094,25 +1126,26 @@ function renderType(w, note) {
     announce();
     buttons.replaceChildren(action("Next", "Enter", () => grade(w, correct), "enter"));
     keys = e => { if (e.key === "Enter") grade(w, correct); else return false; };
-    touch = { left: () => grade(w, correct), right: () => grade(w, correct), up: speak, down: () => stepHistory(-1) };
+    const next = () => grade(w, correct);
+    touch = { left: next, right: next, up: speak, down: () => stepHistory(-1), tap: next };
   };
   input.addEventListener("keydown", e => {
     if (settled || e.key !== "Enter" || e.isComposing || e.keyCode === 229) return;
     e.preventDefault();
     e.stopPropagation();
     const value = bare(input.value);
-    if (value) settle(accepted.has(value));
+    settle(value ? accepted.has(value) : false);   /* Return on an empty box: don't know */
   });
   buttons.append(action("Don't know", "", () => settle(false), " "));
-  app.append(el("main", null, el("div", { class: "hero en" }, w.gloss), input, answer, buttons, el("div", { class: "note" }, note)));
+  app.append(card([el("div", { class: "hero en" }, w.gloss), input], answer, buttons, el("div", { class: "note" }, note)));
   input.focus();
 }
 
 /* ---------- done ---------- */
 function renderDone() {
-  app.append(el("main", null,
+  app.append(card([
     el("div", { class: "hero", lang: "ja" }, "お疲れ様"),
-    el("div", { class: "done-en" }, "All done")));
+    el("div", { class: "done-en" }, "All done")]));
   touch = { right: () => stepHistory(-1), down: () => stepHistory(-1) };
 }
 
@@ -1361,7 +1394,7 @@ function prevListen() {
 function renderListen() {
   document.getElementById("label").replaceChildren(el("a", { href: "#", style: "text-decoration:none" }, "← Back"));
   if (!listening) {
-    app.append(el("main", null, el("div", { class: "empty" }, "Loading…")));
+    app.append(card(el("div", { class: "empty" }, "Loading…")));
     sentencesReady.then(() => {
       listening = { cards: listenCards(), at: -1 };
       if (location.hash === "#listen") render();
@@ -1372,7 +1405,7 @@ function renderListen() {
   const leave = () => { location.hash = ""; };
   if (!cards.length) {
     keys = e => { if (e.key === "Escape") leave(); else return false; };
-    return app.append(el("main", null, el("div", { class: "empty" }, "No sentences for this week's words yet.")));
+    return app.append(card(el("div", { class: "empty" }, "No sentences for this week's words yet.")));
   }
   if (at < 0 || at >= cards.length) {
     const finished = at >= 0;
@@ -1384,29 +1417,30 @@ function renderListen() {
     };
     touch = { left: nextListen, right: prevListen };
     if (!finished) aivis(cards[0].s.text);
-    return app.append(el("main", null,
+    return app.append(card(
       el("div", { class: "hero", lang: "ja" }, finished ? "おわり" : "聞き取り"),
-      el("div", { class: "note" }, finished
+      el("div", { class: "answer note" }, finished
         ? "→ for " + LISTEN_SIZE + " more · ← back · esc to leave"
-        : cards.length + " sentences · → next · ← back · space replays · ↓ text, then translation · ↑ hides"),
+        : cards.length + " sentences · → next · ← back · space or tap replays · ↓ text, then translation · ↑ hides"),
       el("div", { class: "actions hotkeys" }, action(finished ? "Again" : "Start", "→", nextListen))));
   }
   const shown = cards[at], { w, s, translated } = shown;   /* shown.text and .trans persist across arrows */
   const answer = el("div", { class: "answer" });
   translated.then(() => answer.append(sentenceEnglish(s)));
-  const card = el("main", { class: "listen" },
+  const view = card(
     el("div", { class: "hero sentence", lang: "ja", onclick: selectSentence }, renderSentence(s, true, w)),
     answer,
-    el("div", { class: "actions hotkeys" },
+    el("div", { class: "actions hotkeys gestures slots five" },
       action("Replay", " ", speak, "space"),
       action("Show", "↓", () => reveal(1)),
       action("Hide", "↑", () => reveal(-1)),
       action("Back", "←", prevListen),
       action("Next", "→", nextListen)),
-    el("div", { class: "note" }, (at + 1) + " / " + cards.length));
+    el("div", { class: "note" }, (at + 1) + " / " + cards.length),
+    "listen");
   const paint = () => {
-    card.classList.toggle("showText", !!shown.text);
-    card.classList.toggle("showTrans", !!shown.trans);
+    view.classList.toggle("showText", !!shown.text);
+    view.classList.toggle("showTrans", !!shown.trans);
   };
   /* Three steps: nothing, text, text and translation. ↓ goes one further, ↑ one back. */
   const reveal = by => {
@@ -1427,8 +1461,9 @@ function renderListen() {
     else if (e.key === "Escape") leave();
     else return false;
   };
-  touch = { left: nextListen, right: prevListen, down: () => reveal(1), up: () => reveal(-1) };
-  app.append(card);
+  /* Every button has a gesture, so zen can hide them: a tap replays. */
+  touch = { left: nextListen, right: prevListen, down: () => reveal(1), up: () => reveal(-1), tap: speak };
+  app.append(view);
   say(s.text);
   if (cards[at + 1]) aivis(cards[at + 1].s.text);   /* ready before → is pressed */
 }
@@ -1832,6 +1867,14 @@ document.addEventListener("visibilitychange", () => {
   if (document.visibilityState !== "visible" || location.hash) return;
   if (renderedOn !== currentDay()) render();
 });
+/* The card's zones sit between the header and the navbar, whatever their height. */
+const measureChrome = () => {
+  const root = document.documentElement.style;
+  root.setProperty("--headH", document.querySelector("header").offsetHeight + "px");
+  root.setProperty("--footH", document.querySelector("footer").offsetHeight + "px");
+};
+new ResizeObserver(measureChrome).observe(document.querySelector("header"));
+new ResizeObserver(measureChrome).observe(document.querySelector("footer"));
 render();
 if (syncCfg) syncNow();
 if ("serviceWorker" in navigator && (location.protocol === "https:" || location.hostname === "localhost"))
