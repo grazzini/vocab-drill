@@ -98,7 +98,9 @@ main > .note { display: flex; align-items: center; justify-content: center; gap:
 .hero:not(.long):not(.en):not(.sentence) { white-space: nowrap; }
 .hero.long { font-size: clamp(2.9rem, 9.6vw, 5.8rem); }
 .hero.en { font-family: var(--en); font-size: clamp(2.6rem, 7.8vw, 5rem); line-height: 1.2; }
-.hero.sentence { font-size: clamp(2rem, 5.5vw, 3.6rem); line-height: 2; max-width: 22em; }
+.hero.sentence { font-size: clamp(2rem, 5.5vw, 3.6rem); line-height: 2; max-width: 22em; word-break: auto-phrase; }
+/* Wrapped lines of similar length, never one stray character; fitLine prefers a single line. */
+.hero, .gloss, .trans, .choice, .done-en, .empty { text-wrap: balance; }
 rt { font-size: .42em; color: var(--dim); font-weight: 400; }
 .hero rt { font-size: .24em; }
 .hero.sentence rt { font-size: max(.32em, 11px); }
@@ -801,6 +803,22 @@ function mainMode() {
   return S.day.queue.length || S.day.missed.length ? "review" : "done";
 }
 let renderedOn = null;   /* the day the visible view was built for */
+/* One line when a slightly smaller size allows it; otherwise the CSS balances the lines. */
+const FIT_MIN = 0.78;
+function fitLine(node) {
+  const pane = node.closest(".pane");
+  node.style.fontSize = node.style.maxWidth = node.style.whiteSpace = "";
+  if (!pane || !pane.clientWidth) return;
+  node.style.whiteSpace = "nowrap";
+  node.style.maxWidth = "none";
+  const need = node.scrollWidth, room = pane.clientWidth;
+  if (need <= room) return;
+  if (room / need >= FIT_MIN) node.style.fontSize = parseFloat(getComputedStyle(node).fontSize) * room / need * 0.98 + "px";
+  else node.style.whiteSpace = node.style.maxWidth = "";
+}
+const fitAll = () => app.querySelectorAll(".pane .hero").forEach(fitLine);
+addEventListener("resize", fitAll);
+document.fonts.addEventListener("loadingdone", fitAll);
 function render() {
   renderedOn = currentDay();
   keys = null;
@@ -820,11 +838,12 @@ function render() {
   updateCount(mode);
   app.replaceChildren();
   if (wantList) return renderWeek();
-  if (wantListen) return renderListen();
-  if (peek !== null) return renderPeek();
-  if (mode === "diag") renderDiag();
+  if (wantListen) renderListen();
+  else if (peek !== null) renderPeek();
+  else if (mode === "diag") renderDiag();
   else if (mode === "review") renderCard();
   else renderDone();
+  fitAll();
 }
 function updateCount(mode) {
   const count = document.getElementById("count");
@@ -1057,6 +1076,7 @@ function renderRecognition(w, stage, note) {
       spokenSentence = sentence.text;
       front.className = "hero sentence" + (front.classList.contains("hidekey") ? " hidekey" : "");
       front.replaceChildren(...renderSentence(sentence, true, w));
+      fitLine(front);
     });
   }
 }
