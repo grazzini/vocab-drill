@@ -2,7 +2,7 @@
    next open; audio, stroke drawings and fonts never change at their URLs, so they are kept
    once seen. Everything else (sync, translation, the explainer, local TTS) goes straight
    to the network. */
-const SHELL = "shell-v1", KEEP = "keep-v1";
+const SHELL = "shell-v2", KEEP = "keep-v1";
 const SHELL_FILES = ["./", "sentences.js", "manifest.webmanifest", "icons/icon-192.png", "icons/apple-touch-icon.png"];
 const KEEP_ORIGINS = ["https://raw.githubusercontent.com", "https://fonts.googleapis.com", "https://fonts.gstatic.com"];
 
