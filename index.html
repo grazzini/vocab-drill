@@ -95,6 +95,8 @@ rt { font-size: .42em; color: var(--dim); font-weight: 400; }
 .hero rt { font-size: .24em; }
 .hero.sentence rt { font-size: max(.32em, 11px); }
 .nofuri rt { visibility: hidden; }
+/* Stages without furigana still lay out the key word's, so the cheat moves nothing. */
+.hidekey:not(.sentence) rt, .hidekey.sentence mark rt { visibility: hidden; }
 /* AnimCJK sits over the invisible font glyph, so swapping it in never moves the layout. */
 .strokeChar { position: relative; }
 .strokeChar.drawing { color: transparent; }
@@ -140,6 +142,8 @@ a.src { color: var(--dim); opacity: .6; font-style: normal; font-size: .8em; tex
 a.src:hover { opacity: 1; color: var(--ink); }
 .note { color: var(--dim); font-size: .95rem; min-height: 1.5em; margin-top: 8px; }
 .actions { display: flex; flex-wrap: wrap; gap: 12px 32px; justify-content: center; margin-top: 22px; min-height: 2.6rem; }
+.actions.slots { display: grid; grid-template-columns: repeat(3, minmax(0, 8em)); justify-content: center; justify-items: center; gap: 12px 16px; }
+.actions.aux { margin-top: 10px; min-height: 0; }
 .act { padding: 6px 2px; border-bottom: 1px solid var(--line); }
 .act:hover { border-color: var(--ink); }
 .act kbd { font: inherit; color: var(--dim); font-size: .85em; margin-left: 6px; }
@@ -969,10 +973,13 @@ function renderCard() {
 }
 function renderRecognition(w, stage, note) {
   const token = (renderRecognition.token = {});
-  const front = el("div", { class: heroClass(w.word), lang: "ja" }, linkedWord(w, stage.furigana));
+  const front = el("div", { class: heroClass(w.word) + (stage.furigana ? "" : " hidekey"), lang: "ja" }, linkedWord(w, true));
   lookup = w;
   const answer = el("div", { class: "answer" });
-  const buttons = el("div", { class: "actions hotkeys" });
+  /* Three fixed slots, so Got it never moves: Show | Got it | – becomes Repeat | Got it | Missed. */
+  const buttons = el("div", { class: "actions hotkeys slots" });
+  const cheat = () => front.classList.toggle("hidekey");
+  const aux = stage.furigana ? null : el("div", { class: "actions hotkeys aux" }, action("Furigana", "f", cheat));
   const info = el("div", { class: "note" }, note);
   let sentence = null, shown = false;
   /* Swipe right like j (got it); left reveals, then counts as k (missed). */
@@ -980,25 +987,29 @@ function renderRecognition(w, stage, note) {
   const reveal = () => {
     if (shown) return;
     shown = true;
-    gestures.tap = null;
+    gestures.tap = gestures.word = null;
     answer.replaceChildren(
       el("div", { class: "reading" }, w.kana),
       el("div", { class: "gloss" }, w.gloss),
       sentence ? sentenceEnglish(sentence) : null);
     buttons.replaceChildren(
+      action("Repeat", "r", speak),
       action("Got it", "j", () => grade(w, true)),
       action("Missed", "k", () => grade(w, false)));
+    if (aux) aux.remove();
     announce();
   };
-  buttons.append(action("Show", " ", reveal, "space"), action("Got it", "j", () => grade(w, true)));
+  buttons.append(action("Show", " ", reveal, "space"), action("Got it", "j", () => grade(w, true)), el("span"));
   keys = e => {
     if (e.key === " " || e.key === "Enter") reveal();
     else if (e.key === "j") grade(w, true);   /* no need to reveal a word you're sure of */
     else if (shown && e.key === "k") grade(w, false);
+    else if (aux && e.key === "f") cheat();
     else return false;
   };
   gestures.tap = reveal;
-  app.append(el("main", null, front, answer, buttons, info));
+  if (aux) gestures.word = cheat;   /* tapping the key word peeks at its furigana */
+  app.append(el("main", null, front, answer, buttons, aux, info));
   if (!stage.context) showStrokes(front);
   else {
     front.style.visibility = "hidden";
@@ -1013,8 +1024,8 @@ function renderRecognition(w, stage, note) {
       }
       sentence = list[0];
       spokenSentence = sentence.text;
-      front.className = "hero sentence";
-      front.replaceChildren(...renderSentence(sentence, stage.furigana, w));
+      front.className = "hero sentence" + (front.classList.contains("hidekey") ? " hidekey" : "");
+      front.replaceChildren(...renderSentence(sentence, true, w));
     });
   }
 }
@@ -1588,13 +1599,15 @@ app.addEventListener("touchend", e => {
   if (handler) handler();
 }, { passive: true });
 app.addEventListener("touchcancel", () => dropSwipe(true), { passive: true });
-/* A tap anywhere on an unrevealed card reveals it, instead of following the word's Jisho link. */
+/* A tap anywhere on an unrevealed card reveals it, instead of following the word's Jisho link.
+   Where the view offers touch.word, a tap on the key word itself does that instead. */
 app.addEventListener("click", e => {
   if (lastPointer !== "touch" || !touch || !touch.tap) return;
   if (!e.target.closest("main") || e.target.closest("button, input")) return;
   e.preventDefault();
   e.stopPropagation();
-  touch.tap();
+  if (touch.word && e.target.closest(".hero.sentence mark, .hero:not(.sentence)")) touch.word();
+  else touch.tap();
 }, true);
 
 /* ---------- GitHub sync ---------- */
