@@ -1029,14 +1029,17 @@ function renderRecognition(w, stage, note) {
   const cheat = () => front.classList.toggle("hidekey");
   const aux = stage.furigana ? null : action("Furigana", "f", cheat);
   if (aux) aux.classList.add("cheat");
-  const info = el("span", null, note);
   let sentence = null, shown = false;
-  /* Swipe right like j (got it); left reveals, then counts as k (missed). */
-  const gestures = touch = { right: () => grade(w, true), left: () => shown ? grade(w, false) : reveal(), up: speak, down: () => stepHistory(-1) };
+  /* Swipes: right got it, left back a card, down shows the answer, up hides it again. A tap repeats.
+     With the answer up, Got it and Missed stay on screen in zen too: Missed has no swipe. */
+  const gestures = touch = { right: () => grade(w, true), left: () => stepHistory(-1), down: () => reveal(), up: () => conceal(), tap: speak };
+  const showFront = () => {
+    buttons.replaceChildren(action("Show", " ", reveal, "space"), action("Got it", "j", () => grade(w, true)), el("span"));
+    if (aux) { info.before(aux); gestures.word = cheat; }   /* tapping the key word peeks at its furigana */
+  };
   const reveal = () => {
     if (shown) return;
     shown = true;
-    gestures.tap = speak;   /* revealed: a tap repeats */
     gestures.word = null;
     answer.replaceChildren(
       el("div", { class: "reading" }, w.kana),
@@ -1044,21 +1047,26 @@ function renderRecognition(w, stage, note) {
       sentence ? sentenceEnglish(sentence) : null);
     buttons.replaceChildren(
       action("Repeat", "r", speak),
-      action("Got it", "j", () => grade(w, true)),
-      action("Missed", "k", () => grade(w, false)));
+      stay(action("Got it", "j", () => grade(w, true))),
+      stay(action("Missed", "k", () => grade(w, false))));
     if (aux) aux.remove();
     announce();
   };
-  buttons.append(action("Show", " ", reveal, "space"), action("Got it", "j", () => grade(w, true)), el("span"));
+  const conceal = () => {
+    if (!shown) return;
+    shown = false;
+    answer.replaceChildren();
+    showFront();
+  };
   keys = e => {
     if (e.key === " " || e.key === "Enter") reveal();
     else if (e.key === "j") grade(w, true);   /* no need to reveal a word you're sure of */
     else if (shown && e.key === "k") grade(w, false);
-    else if (aux && e.key === "f") cheat();
+    else if (aux && !shown && e.key === "f") cheat();
     else return false;
   };
-  gestures.tap = reveal;
-  if (aux) gestures.word = cheat;   /* tapping the key word peeks at its furigana */
+  const info = el("span", null, note);
+  showFront();
   app.append(card(front, answer, buttons, el("div", { class: "note" }, aux, info)));
   if (!stage.context) showStrokes(front);
   else {
