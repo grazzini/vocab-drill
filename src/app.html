@@ -506,7 +506,7 @@ function speak() {
 function audioUrl(text) {
   let hash = 0x811c9dc5;
   for (let i = 0; i < text.length; i++) hash = Math.imul(hash ^ text.charCodeAt(i), 0x01000193);
-  return "audio/" + (hash >>> 0).toString(16).padStart(8, "0") + ".m4a";
+  return "audio-morioki/" + (hash >>> 0).toString(16).padStart(8, "0") + ".m4a";
 }
 /* AivisSpeech, the local engine app: live, so its settings and dictionary apply at once.
    Pages served from localhost only; the engine refuses file:// and other sites unless allowed in its settings. */

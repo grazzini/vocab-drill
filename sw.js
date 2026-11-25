@@ -2,7 +2,7 @@
    next open; audio, stroke drawings and fonts never change at their URLs, so they are kept
    once seen. Everything else (sync, translation, the explainer, local TTS) goes straight
    to the network. */
-const SHELL = "shell-v3", KEEP = "keep-v1";
+const SHELL = "shell-v4", KEEP = "keep-v1";
 const SHELL_FILES = ["./", "sentences.js", "manifest.webmanifest", "icons/icon-192.png", "icons/apple-touch-icon.png"];
 const KEEP_ORIGINS = ["https://raw.githubusercontent.com", "https://fonts.googleapis.com", "https://fonts.gstatic.com"];
 
@@ -12,6 +12,8 @@ self.addEventListener("install", event => {
 self.addEventListener("activate", event => {
   event.waitUntil(caches.keys()
     .then(names => Promise.all(names.filter(n => n !== SHELL && n !== KEEP).map(n => caches.delete(n))))
+    .then(() => caches.open(KEEP))   /* the old voice's clips, now unused */
+    .then(cache => cache.keys().then(reqs => Promise.all(reqs.filter(r => r.url.includes("/audio/")).map(r => cache.delete(r)))))
     .then(() => self.clients.claim()));
 });
 
@@ -20,7 +22,7 @@ self.addEventListener("fetch", event => {
   if (req.method !== "GET") return;
   const url = new URL(req.url);
   if (url.origin === location.origin) {
-    if (url.pathname.includes("/audio/")) event.respondWith(audio(req));
+    if (/\/audio(-[a-z]+)?\//.test(url.pathname)) event.respondWith(audio(req));
     else event.respondWith(networkFirst(req));
   } else if (KEEP_ORIGINS.includes(url.origin)) event.respondWith(cacheFirst(req));
 });
