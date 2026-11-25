@@ -185,6 +185,10 @@ body.zen .act kbd, body.zen .level { display: none; }
 }
 /* Controls whose every action has a gesture: zen hides them on touch screens too (all but .stay). */
 body.zen .actions.gestures > :not(.stay), body.zen .cheat { visibility: hidden; }
+/* In zen only the buttons with no gesture remain (Got it · Missed, Undo): centre them instead of leaving them in their slots. */
+body.zen .actions.slots.gestures:has(> .stay) { display: flex; justify-content: center; }
+body.zen .actions.slots.gestures:has(> .stay) > :not(.stay) { display: none; }
+body.zen .actions.slots.gestures > .stay { min-width: 7em; }
 body.zen .hero:not(.en):not(.sentence):not(.long) { font-size: min(clamp(5.3rem, 21.6vw, 13.2rem), var(--fit5)); }
 body.zen .hero.en { font-size: clamp(3.1rem, 9.6vw, 6.5rem); }
 /* Touch: bigger targets, no key hints, and a zen footer that can be seen before it is tapped. */
@@ -851,7 +855,7 @@ function updateCount(mode) {
   let done, total, past = false;
   const today = S.day && S.day.date === currentDay() ? S.day : null;
   if (mode === "diag") { done = S.week.ids.length; total = WEEK_SIZE; }
-  else if (today && today.cleared.length) { done = today.cleared.length; total = S.week.ids.length; }
+  else if (today) { done = today.cleared.length; total = S.week.ids.length; }   /* 0/100 from the start, not the last session's score */
   else if (S.last) { done = S.last.done; total = S.last.total; past = mode !== "done"; }
   else { done = 0; total = S.week.ids.length; }
   count.textContent = done + "/" + total;
@@ -1041,10 +1045,10 @@ function renderRecognition(w, stage, note) {
     if (shown) return;
     shown = true;
     gestures.word = null;
-    answer.replaceChildren(
+    answer.replaceChildren(   /* replaceChildren, unlike el, would print a null */
       el("div", { class: "reading" }, w.kana),
       el("div", { class: "gloss" }, w.gloss),
-      sentence ? sentenceEnglish(sentence) : null);
+      ...(sentence ? [sentenceEnglish(sentence)] : []));
     buttons.replaceChildren(
       action("Repeat", "r", speak),
       stay(action("Got it", "j", () => grade(w, true))),
