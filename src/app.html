@@ -68,6 +68,7 @@ footer {
   padding: 16px 16px max(16px, env(safe-area-inset-bottom)); color: var(--dim); font-size: .95rem; transition: opacity .3s; flex-wrap: wrap;
 }
 #syncBtn.err { color: var(--accent); }
+#build { font-size: .75em; opacity: .5; font-family: ui-monospace, monospace; }
 .touchOnly { display: none; }
 footer button:hover { color: var(--ink); }
 body.weekList footer { display: none; }
@@ -266,6 +267,7 @@ rt { -webkit-user-select: none; user-select: none; }   /* selecting a sentence f
   <button id="speedBtnTts" title="Speech speed (- slower, = faster, click to reset)"></button>
   <button id="askBtn" class="touchOnly" title="Explain the selection or sentence (Google AI Mode)">explain</button>
   <button id="syncBtn" title="Sync to GitHub (y; Y for settings)">sync</button>
+  <span id="build" title="Build of this page">/*BUILD*/</span>
 </footer>
 <div id="explain" hidden></div>
 
@@ -1909,6 +1911,13 @@ new ResizeObserver(measureChrome).observe(document.querySelector("header"));
 new ResizeObserver(measureChrome).observe(document.querySelector("footer"));
 render();
 if (syncCfg) syncNow();
+/* Installed on a touch device: true fullscreen, bars and all. Android only grants it on a touch, and drops it when
+   you leave the app, so ask again on the next touch. (iOS has no fullscreen for pages.) */
+if (matchMedia("(display-mode: standalone), (display-mode: fullscreen), (display-mode: minimal-ui)").matches
+    && matchMedia("(pointer: coarse)").matches && document.documentElement.requestFullscreen)
+  addEventListener("touchend", () => {
+    if (!document.fullscreenElement) document.documentElement.requestFullscreen({ navigationUI: "hide" }).catch(() => {});
+  }, { capture: true, passive: true });
 if ("serviceWorker" in navigator && (location.protocol === "https:" || location.hostname === "localhost"))
   navigator.serviceWorker.register("sw.js").catch(err => console.warn("offline support:", err));
 </script>

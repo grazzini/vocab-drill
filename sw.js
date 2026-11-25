@@ -2,7 +2,7 @@
    next open; audio, stroke drawings and fonts never change at their URLs, so they are kept
    once seen. Everything else (sync, translation, the explainer, local TTS) goes straight
    to the network. */
-const SHELL = "shell-v2", KEEP = "keep-v1";
+const SHELL = "shell-v3", KEEP = "keep-v1";
 const SHELL_FILES = ["./", "sentences.js", "manifest.webmanifest", "icons/icon-192.png", "icons/apple-touch-icon.png"];
 const KEEP_ORIGINS = ["https://raw.githubusercontent.com", "https://fonts.googleapis.com", "https://fonts.gstatic.com"];
 
@@ -29,7 +29,7 @@ async function networkFirst(req) {
   const cache = await caches.open(SHELL);
   const key = req.mode === "navigate" ? "./" : req;
   try {
-    const res = await fetch(req);
+    const res = await fetch(req, { cache: "no-cache" });   /* Pages says max-age=600: ask anyway, so a new build shows at once */
     if (res.ok) cache.put(key, res.clone());
     return res;
   } catch (err) {

@@ -9,6 +9,7 @@ order is N5 to N1, most frequent first within each level, so it is the order
 the diagnostic walks.
 """
 import csv
+import hashlib
 import json
 import re
 import sys
@@ -91,6 +92,7 @@ def main():
     ]
     blob = json.dumps(data, ensure_ascii=False, separators=(",", ":")).replace("<", "\\u003c")
     html = (ROOT / "src" / "app.html").read_text(encoding="utf8").replace("/*WORDS*/[]", blob)
+    html = html.replace("/*BUILD*/", hashlib.sha1(html.encode()).hexdigest()[:7])   # same page, same stamp
     (ROOT / "index.html").write_text(html, encoding="utf8")
 
     counts = {n: sum(1 for w in data if w[4] == n) for n in range(5, 0, -1)}
