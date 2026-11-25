@@ -68,7 +68,7 @@ footer {
   padding: 16px 16px max(16px, env(safe-area-inset-bottom)); color: var(--dim); font-size: .95rem; transition: opacity .3s; flex-wrap: wrap;
 }
 #syncBtn.err { color: var(--accent); }
-#build { font-size: .75em; opacity: .5; font-family: ui-monospace, monospace; }
+#build { align-self: center; font-size: .75em; opacity: .5; font-family: ui-monospace, monospace; }
 .touchOnly { display: none; }
 footer button:hover { color: var(--ink); }
 body.weekList footer { display: none; }
@@ -1036,9 +1036,10 @@ function renderRecognition(w, stage, note) {
   const aux = stage.furigana ? null : action("Furigana", "f", cheat);
   if (aux) aux.classList.add("cheat");
   let sentence = null, shown = false;
-  /* Swipes: right got it, left back a card, down shows the answer, up hides it again. A tap repeats.
+  /* Swipes turn pages, as in listening: finger left is got it (next), finger right goes back a card.
+     Down shows the answer, up hides it again. A tap repeats.
      With the answer up, Got it and Missed stay on screen in zen too: Missed has no swipe. */
-  const gestures = touch = { right: () => grade(w, true), left: () => stepHistory(-1), down: () => reveal(), up: () => conceal(), tap: speak };
+  const gestures = touch = { left: () => grade(w, true), right: () => stepHistory(-1), down: () => reveal(), up: () => conceal(), tap: speak };
   const showFront = () => {
     buttons.replaceChildren(action("Show", " ", reveal, "space"), action("Got it", "j", () => grade(w, true)), el("span"));
     if (aux) { info.before(aux); gestures.word = cheat; }   /* tapping the key word peeks at its furigana */
