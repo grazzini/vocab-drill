@@ -364,7 +364,7 @@ rt { -webkit-user-select: none; user-select: none; }   /* selecting a sentence f
   <button id="speedBtnTts" title="Speech speed (- slower, = faster, click to reset)"></button>
   <button id="askBtn" class="touchOnly" title="Explain the selection or sentence (Google AI Mode)">explain</button>
   <button id="syncBtn" title="Sync to GitHub (y; Y for settings)">sync</button>
-  <span id="build" title="Build of this page">2171fbe</span>
+  <span id="build" title="Build of this page">183d82e</span>
 </footer>
 <div id="explain" hidden></div>
 
@@ -2344,10 +2344,34 @@ addEventListener("pointerdown", e => { lastPointer = e.pointerType; }, { capture
 const swipeCard = () => app.querySelector("main");
 /* A tick each time a swipe crosses into another grade: vibrate where there is one (Android);
    on iOS 18+ toggling a hidden switch control gives the system's haptic. */
-function tick() {
+function tick(g) {
   if (navigator.vibrate) navigator.vibrate(100);
   else document.querySelector(".haptic").click();
+  clickSound(g);
 }
+/* And a click, for devices with no vibration motor: higher for each easier grade. Browsers only start
+   audio after a tap, so the context is woken on the first touch and the clicks play from then on. */
+let clickCtx = null;
+function audioReady() {
+  try {
+    if (!clickCtx) clickCtx = new (window.AudioContext || window.webkitAudioContext)();
+    if (clickCtx.state === "suspended") clickCtx.resume();
+  } catch { clickCtx = null; }
+  return clickCtx;
+}
+function clickSound(g) {
+  const ctx = audioReady();
+  if (!ctx) return;
+  const t = ctx.currentTime, osc = ctx.createOscillator(), gain = ctx.createGain();
+  osc.type = "triangle";
+  osc.frequency.value = { 2: 520, 3: 820, 4: 1250 }[g] || 820;
+  gain.gain.setValueAtTime(0.3, t);
+  gain.gain.exponentialRampToValueAtTime(0.001, t + 0.045);
+  osc.connect(gain).connect(ctx.destination);
+  osc.start(t);
+  osc.stop(t + 0.05);
+}
+addEventListener("touchend", audioReady, { capture: true, passive: true });
 let strengthShown = null;
 function showStrength(dx) {
   const box = document.getElementById("strength");
@@ -2356,7 +2380,7 @@ function showStrength(dx) {
   if (g === strengthShown) return;
   const changed = strengthShown !== null;
   strengthShown = g;
-  tick();
+  tick(g);
   box.replaceChildren(
     el("div", { class: "what" }, el("span", { class: "name g" + g + (changed ? " pop" : "") }, GRADES[g]), el("span", { class: "next" }, next)),
     el("div", { class: "meter g" + g }, [2, 3, 4].map(n => el("span", { class: n <= g ? "on" : "" }))),
