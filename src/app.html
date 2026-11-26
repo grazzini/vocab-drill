@@ -413,33 +413,140 @@ main:has(.choices) { --ans: auto; }
   .stats { width: min(680px, 100%); }
   .list { width: min(860px, 100%); }
 }
+
+/* ---------- three places (Today, Words, Memory) and a bare session ---------- */
+#dock { position: fixed; inset: auto 0 0 0; z-index: 2; display: flex; justify-content: flex-end; align-items: center;
+  padding: 4px max(12px, env(safe-area-inset-right)) max(8px, env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left)); }
+#dock .dots { min-width: 48px; min-height: 44px; font-size: 1.4rem; letter-spacing: 2px; color: var(--dim); }
+#dock .dots:hover { color: var(--ink); }
+#dock:has(a) { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); border-top: 1px solid var(--line); background: var(--bg); padding-top: 6px; }
+#dock a { display: flex; flex-direction: column; align-items: center; text-decoration: none; color: var(--dim); padding: 4px 0; font-size: .8rem; line-height: 1.3; }
+#dock a span { font-family: var(--ja); font-size: 1.25rem; }
+#dock a[aria-current="page"] { color: var(--ink); }
+body.place header { display: none; }
+body.place .stats { padding-top: max(40px, calc(env(safe-area-inset-top) + 24px)); padding-bottom: calc(var(--footH, 64px) + 24px); }
+.list { padding-bottom: calc(var(--footH, 64px) + 24px); }
+#endBtn { display: none; width: 40px; height: 40px; margin: -10px 4px -10px -10px; font-size: 1.2rem; color: var(--dim); }
+body.session #endBtn { display: inline-block; }
+header .lead { display: inline-flex; align-items: baseline; min-width: 0; }
+body.session main { touch-action: none; }   /* the card's own gestures, never a page scroll */
+/* The sheet behind ···: places, this card, and how it looks and sounds. */
+#sheet { margin: auto auto 0; width: min(560px, 100%); max-width: 100%; max-height: 92dvh; box-sizing: border-box; border: 0; border-radius: 16px 16px 0 0;
+  padding: 10px max(22px, env(safe-area-inset-right)) max(22px, env(safe-area-inset-bottom)) max(22px, env(safe-area-inset-left));
+  background: var(--tint); color: var(--ink); font-size: 1.05rem; overflow-y: auto; }
+#sheet::backdrop { background: rgb(0 0 0 / .3); }
+#sheet .grip { width: 36px; height: 4px; border-radius: 2px; background: var(--line); margin: 0 auto 14px; }
+#sheet .go { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; margin-bottom: 18px; }
+#sheet .go button { display: flex; flex-direction: column; align-items: center; padding: 10px 0; border-radius: 10px; background: var(--bg); font-size: .85rem; color: var(--dim); }
+#sheet .go button span { font-family: var(--ja); font-size: 1.35rem; color: var(--ink); }
+#sheet h3 { font: 400 .78rem var(--en); letter-spacing: .07em; text-transform: uppercase; color: var(--dim); margin: 6px 0 2px; }
+#sheet .line { display: flex; justify-content: space-between; align-items: center; gap: 12px; width: 100%; min-height: 44px; border-bottom: 1px solid var(--line); text-align: left; }
+#sheet .line kbd { font: inherit; color: var(--dim); font-size: .85em; }
+#sheet .line button, #sheet .line > span:last-child { color: var(--dim); }
+#sheet .line button:hover { color: var(--ink); }
+#sheet .line button.on { color: var(--ink); }
+#sheet .foot { display: flex; justify-content: space-between; align-items: center; margin-top: 14px; color: var(--dim); font-size: .9rem; }
+/* Pulling a prompt down: what you'd get, before you let go. */
+#pull { position: fixed; left: 50%; transform: translateX(-50%); top: calc(var(--headH, 64px) + 12px); z-index: 3; width: min(360px, calc(100vw - 32px));
+  display: flex; flex-direction: column; align-items: center; gap: 4px; text-align: center; pointer-events: none; }
+#pull[hidden] { display: none; }
+#pull .cap { font-size: .75rem; letter-spacing: .07em; text-transform: uppercase; color: var(--dim); }
+#pull .name { font-size: 1.4rem; color: var(--dim); transition: color .15s; }
+#pull.ready .name { color: var(--accent); }
+#pull .why { font-size: .85rem; color: var(--dim); }
+/* Where the card is on the ladder of formats: hardest at the top. */
+.rail { position: fixed; left: max(10px, env(safe-area-inset-left)); top: 50%; transform: translateY(-50%); display: flex; flex-direction: column; gap: 14px; align-items: center; pointer-events: none; z-index: 1; }
+.rail i { width: 6px; height: 6px; border-radius: 50%; background: var(--line); }
+.rail i.done { background: color-mix(in srgb, var(--dim) 45%, var(--bg)); }
+.rail i.now { width: 10px; height: 10px; background: var(--ink); }
+.rail i.next { width: 10px; height: 10px; background: none; box-shadow: inset 0 0 0 2px var(--accent); }
+/* Today */
+.today { width: min(560px, 100%); margin: 0 auto; box-sizing: border-box; min-height: 100dvh; display: flex; flex-direction: column;
+  padding: max(40px, calc(env(safe-area-inset-top) + 24px)) max(24px, env(safe-area-inset-right)) calc(var(--footH, 64px) + 18px) max(24px, env(safe-area-inset-left)); }
+.today .top { display: flex; justify-content: space-between; align-items: flex-start; }
+.today .when { color: var(--dim); font-size: .95rem; }
+.today h1 { font: 400 3.2rem/1.2 var(--ja); margin: 2px 0 10px; }
+@media (max-height: 700px) { .today h1, .words h1 { font-size: 2.5rem; } .trow { padding: 10px 0; } .today { padding-top: max(24px, calc(env(safe-area-inset-top) + 14px)); } }
+.today .dots { min-width: 44px; min-height: 44px; font-size: 1.4rem; letter-spacing: 2px; color: var(--dim); }
+.trow { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2px 12px; padding: 14px 0; border-bottom: 1px solid var(--line); align-items: baseline; width: 100%; text-align: left; }
+.trow .t { font-size: 1.35rem; }
+.trow .n { font-size: 1.2rem; font-variant-numeric: lining-nums tabular-nums; }
+.trow .n.due { color: var(--accent); }
+.trow .s { grid-column: 1 / span 2; font-size: .95rem; color: var(--dim); }
+.trow .bar { grid-column: 1 / span 2; display: flex; height: 2px; margin-top: 8px; background: var(--line); }
+.trow .bar i { background: var(--ink); }
+.trow .bar.srs { background: color-mix(in srgb, var(--accent) 28%, var(--bg)); }
+.trow .bar.srs i { background: var(--accent); }
+.trow.done .t, .trow.done .n { color: var(--dim); }
+.trow.go:hover .t { color: var(--accent); }
+.waiting { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; color: var(--dim); }
+.waiting button { padding: 10px 0; color: var(--ink); border-bottom: 1px solid var(--line); }
+.today .rest { flex-grow: 1; display: flex; align-items: center; justify-content: center; font: 400 2.4rem var(--ja); color: var(--dim); min-height: 2em; }
+.today .start { position: sticky; bottom: calc(var(--footH, 64px) + 12px); }
+.start { width: 100%; min-height: 56px; border-radius: 28px; background: var(--ink); color: var(--bg); font-size: 1.25rem; }
+.start.quiet { background: none; color: var(--ink); box-shadow: inset 0 0 0 1px var(--ink); }
+/* Words */
+.words { width: min(640px, 100%); margin: 0 auto; box-sizing: border-box;
+  padding: max(40px, calc(env(safe-area-inset-top) + 24px)) max(24px, env(safe-area-inset-right)) calc(var(--footH, 64px) + 24px) max(24px, env(safe-area-inset-left)); }
+.words .top { display: flex; justify-content: space-between; align-items: flex-end; }
+.words h1 { font: 400 3.2rem/1.2 var(--ja); margin: 0; }
+.words .total { color: var(--dim); font-size: .95rem; padding-bottom: 10px; font-variant-numeric: lining-nums; }
+.tabs { display: grid; grid-template-columns: 1fr 1fr; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; margin: 16px 0 4px; }
+.tabs button { min-height: 40px; }
+.tabs button[aria-selected="true"] { background: var(--ink); color: var(--bg); }
+.wk { padding: 14px 0; border-bottom: 1px solid var(--line); display: flex; flex-direction: column; gap: 4px; }
+.wk .h { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
+.wk .h b { font-weight: 400; font-size: 1.35rem; }
+.wk .h span { color: var(--dim); font-size: .95rem; }
+.wk .h span.due { color: var(--accent); }
+.wk .peek { font-family: var(--ja); color: var(--dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.wk .acts { display: flex; gap: 22px; }
+.wk .acts button { min-height: 36px; border-bottom: 1px solid var(--line); }
+.wk .acts button:hover { border-color: var(--ink); }
+.trouble .row { grid-template-columns: minmax(4.5em, 1fr) 2fr auto; }
+.lapses { color: var(--accent); letter-spacing: 1px; font-size: .7rem; }
+.words .start { margin-top: 22px; }
+.hint { color: var(--dim); font-size: .95rem; display: flex; justify-content: center; gap: 22px; flex-wrap: wrap; }
+@media (orientation: landscape) and (max-height: 540px) {
+  .today, .words { padding-top: 16px; }
+  .today h1, .words h1 { font-size: 2.2rem; margin-bottom: 6px; }
+  .trow { padding: 8px 0; }
+  .today .rest { display: none; }
+  .rail { display: none; }
+}
 </style>
 </head>
 <body>
 <header>
-  <span><span id="label"></span><button id="graded" title="Change this grade (swipe right, ← or u)" hidden></button></span>
-  <span><span id="skipped"></span><a id="count" href="#week" title="This week's list"></a></span>
+  <span class="lead"><button id="endBtn" aria-label="Back to today" title="Back to today (esc)">✕</button><span id="label"></span><button id="graded" title="Change this grade (swipe right, ← or u)" hidden></button></span>
+  <span><span id="skipped"></span><a id="count" href="#words" title="Your words"></a></span>
   <div id="hair" aria-hidden="true"></div>
 </header>
 <div id="strength" hidden></div>
 <label class="haptic" aria-hidden="true"><input type="checkbox" switch tabindex="-1"></label>
 <div id="app"></div>
-<footer>
-  <button id="listenBtn">listen</button>
-  <button id="practiceBtn" title="Practice missed words or any week, in any format (p)">practice</button>
-  <button id="memoryBtn" title="Memory: what's due, how well each model predicts you, the scheduler (m)">memory</button>
-  <button id="zenBtn">zen</button>
-  <button id="themeBtn">theme</button>
-  <button id="strokeBtn">strokes</button>
-  <button id="speedBtn"></button>
-  <button id="fontBtn"></button>
-  <button id="voiceBtn">voice</button>
-  <button id="speakerBtn" title="AivisSpeech voice (v)" hidden></button>
-  <button id="speedBtnTts" title="Speech speed (- slower, = faster, click to reset)"></button>
-  <button id="askBtn" class="touchOnly" title="Explain the selection or sentence (Google AI Mode)">explain</button>
-  <button id="syncBtn" title="Sync to GitHub (y; Y for settings)">sync</button>
-  <span id="build" title="Build of this page">/*BUILD*/</span>
-</footer>
+<nav id="dock" aria-label="Places"></nav>
+<div id="pull" hidden></div>
+<dialog id="sheet" aria-label="More">
+  <div class="grip" aria-hidden="true"></div>
+  <div class="go">
+    <button id="todayBtn"><span lang="ja">今日</span>Today</button>
+    <button id="listenBtn"><span lang="ja">聞く</span>Listen</button>
+    <button id="practiceBtn" title="Practice missed words or any week, in any format (p)"><span lang="ja">練習</span>Practice</button>
+    <button id="memoryBtn" title="What's due, how well each model predicts you, the scheduler (m)"><span lang="ja">記憶</span>Memory</button>
+  </div>
+  <h3>This card</h3>
+  <button class="line" id="lookBtn"><span>Look up on Jisho</span><kbd>l</kbd></button>
+  <button class="line" id="askBtn" title="Explain the selection or sentence (Google AI Mode)"><span>Explain this sentence</span><kbd>E</kbd></button>
+  <button class="line" id="strokesOnceBtn"><span>Draw the strokes once</span><kbd>s</kbd></button>
+  <h3>How it looks and sounds</h3>
+  <div class="line"><span>Font</span><button id="fontBtn"></button></div>
+  <div class="line"><span>Stroke mode</span><span><button id="strokeBtn"></button> · <button id="speedBtn"></button></span></div>
+  <div class="line"><span>Read answers aloud</span><span><button id="voiceBtn"></button> · <button id="speakerBtn" title="AivisSpeech voice (v)" hidden></button> <button id="speedBtnTts" title="Speech speed (- slower, = faster, click to reset)"></button></span></div>
+  <div class="line"><span>Buttons on cards</span><button id="zenBtn"></button></div>
+  <div class="line"><span>Theme</span><button id="themeBtn"></button></div>
+  <div class="foot"><button id="syncBtn" title="Sync to GitHub (y; Y for settings)">sync</button><span id="build" title="Build of this page">/*BUILD*/</span></div>
+</dialog>
 <div id="explain" hidden></div>
 
 <script id="words" type="application/json">/*WORDS*/[]</script>
@@ -1266,13 +1373,20 @@ function render() {
   applyTheme();
   document.getElementById("label").title = "";
   const wantList = location.hash === "#week", wantListen = location.hash === "#listen", wantPractice = location.hash === "#practice";
-  const wantMemory = location.hash === "#memory";
+  const wantMemory = location.hash === "#memory", wantToday = location.hash === "#today", wantWords = location.hash === "#words";
+  const place = wantToday || wantWords || wantMemory;
+  document.body.classList.toggle("place", place);
+  document.body.classList.toggle("session", !location.hash || wantPractice || wantListen);
+  document.getElementById("pull").hidden = true;
+  renderDock(wantToday ? "today" : wantWords ? "words" : wantMemory ? "memory" : wantList ? "words" : null);
   document.body.classList.toggle("listing", wantList || wantListen || wantPractice || wantMemory);
   document.body.classList.toggle("weekList", wantList || wantMemory);
   const mode = mainMode();
   updateCount(mode);
   app.replaceChildren();
   sessionMode = wantPractice && S.practice ? "practice" : mode;
+  if (wantToday) return renderToday(mode);
+  if (wantWords) return renderWords();
   if (wantList) return renderWeek();
   if (wantMemory) return renderMemory();
   if (wantListen) renderListen();
@@ -1448,7 +1562,21 @@ const session = () => sessionMode === "practice" ? S.practice : sessionMode === 
    furigana, 3 word, 4 choose, 5 type. A card starts on a rung and swipes down to easier ones; the answer
    is below the last. Week stages start on the day's stage; reviews by how likely the word is remembered
    (or at random): the surer it is, the harder the format. */
-let rung = null;   /* { item, d, stage, steps } for the card on screen */
+let rung = null;   /* { item, d, stage, start, steps, capped } for the card on screen */
+const RUNG_NAMES = ["the sentence with furigana", "the sentence", "the word with furigana", "the word", "choose from four", "type it"];
+/* What pulling the prompt down would do, for the pull label: an easier rung, or the answer under the last. */
+function pullTarget(revealAtBottom) {
+  if (!rung) return null;
+  if (rung.stage === 0) return revealAtBottom ? { cap: "Release to see", name: "the answer", why: "" } : null;
+  const next = rung.stage - 1, caps = next <= 1 && rung.start > 1;
+  return { cap: "Release for an easier format", name: RUNG_NAMES[next],
+    why: rung.capped || caps ? "Got it will then count as Hard" : "Your grade stays as you give it" };
+}
+function ladderRail() {
+  if (!rung) return null;
+  return el("div", { class: "rail", ariaHidden: "true" }, [5, 4, 3, 2, 1, 0].map(n =>
+    el("i", { class: n === rung.stage ? "now" : n === rung.stage - 1 ? "next" : n > rung.stage ? "done" : "" })));
+}
 function startStage(d, item) {
   if (splitKey(item).card === null) return d.stage;
   if (S.formatPick === "random") return 1 + Math.floor(Math.random() * 5);
@@ -1456,13 +1584,15 @@ function startStage(d, item) {
   return r === null ? 3 : r >= 0.92 ? 5 : r >= 0.85 ? 4 : r >= 0.75 ? 3 : r >= 0.6 ? 2 : 1;
 }
 function itemStage(d, item) {
-  if (!rung || rung.item !== item || rung.d !== d) rung = { item, d, stage: startStage(d, item), steps: 0 };
+  if (!rung || rung.item !== item || rung.d !== d) { const stage = startStage(d, item); rung = { item, d, stage, start: stage, steps: 0, capped: false }; }
   return rung.stage;
 }
 function stepDown() {
   if (!rung || rung.stage === 0) return false;
   rung.stage--;
   rung.steps++;
+  /* Furigana or choosing don't lower the grade; needing the example sentence does (unless the card began there). */
+  if (rung.stage <= 1 && rung.start > 1) rung.capped = true;
   render();
 }
 /* The last grade, so it can be taken back: what it changed, as it was before. */
@@ -1471,7 +1601,7 @@ function grade(w, rating) {
   const before = session(), today = currentDay();
   lastGrade = { w, rating, mode: sessionMode, session: structuredClone(before), result: S.results[w.id] ? { ...S.results[w.id] } : null,
     revlog: S.revlog.length, logged: S.log[today] || 0, today, history: S.history.length, last: S.last };
-  if (rung && rung.steps && rating > 2) rating = 2;   /* needed an easier format: Hard at best */
+  if (rung && rung.capped && rating > 2) rating = 2;   /* needed the sentence: Hard at best */
   rung = null;
   const d = before, item = d.queue.shift(), correct = rating > 1;
   (correct ? d.cleared : d.missed).push(item);
@@ -1530,6 +1660,11 @@ function prefetch(stage) {
   });
 }
 function renderCard() {
+  renderCardOnly();
+  const rail = ladderRail();
+  if (rail && app.querySelector("main")) app.append(rail);
+}
+function renderCardOnly() {
   const d = session(), item = d.queue[0], stage = STAGES[itemStage(d, item)], w = BY_ID.get(splitKey(item).id);
   if (!w) { d.queue.shift(); save(); return render(); }
   prefetch(stage);
@@ -1540,7 +1675,7 @@ function renderCard() {
   const note = [srs ? "SRS review" : "",
     d.round > 1 ? (srs ? "second pass, " : "Missed words · ") + d.queue.length + " left"
       : seen === null ? "" : seen === 0 ? "seen earlier today" : "seen " + (seen === 1 ? "yesterday" : seen + " days ago"),
-    rung.steps ? "easier format: Got it counts as Hard" : ""].filter(Boolean).join(" · ");
+    rung.capped ? "with the sentence, Got it counts as Hard" : rung.steps ? "easier format" : ""].filter(Boolean).join(" · ");
   if (sessionMode !== "practice") document.getElementById("label").textContent = (srs ? "SRS review · " : "") + stage.label;
   if (stage.kind === "id") renderRecognition(w, stage, note, S.srs[w.id] ? wordKey(w.id) : null);
   else if (stage.kind === "choice") renderChoice(w, note);
@@ -1565,8 +1700,9 @@ function renderRecognition(w, stage, note, key) {
   const EASY_AT = Math.min(160, innerWidth * 0.3);
   const strength = dx => -dx < EASY_AT ? 3 : 4;
   const easier = () => shown ? null : rung && rung.stage > 0 ? stepDown() : reveal();
-  const gestures = touch = { left: dx => grade(w, dx ? strength(dx) : 3), right: goBack, down: easier, up: () => conceal(), tap: speak,
-    strength: dx => { const g = rung && rung.steps ? 2 : strength(dx), n = key && nextInterval(key, g); return { g, next: n ? "next in " + inDays(n) : "" }; } };
+  const gestures = touch = { left: dx => grade(w, dx ? strength(dx) : 3), right: goBack, down: easier, up: () => conceal(),
+    tap: () => shown ? speak() : reveal(), pull: () => shown ? null : pullTarget(true),
+    strength: dx => { const g = rung && rung.capped ? 2 : strength(dx), n = key && nextInterval(key, g); return { g, next: n ? "next in " + inDays(n) : "" }; } };
   /* Hard · easy sit under Got it; on the front the row is kept empty so nothing moves. */
   const easy = action("easy", "4", () => grade(w, 4));
   easy.classList.add("easy");
@@ -1574,7 +1710,7 @@ function renderRecognition(w, stage, note, key) {
     action("hard", "2", () => grade(w, 2)), el("span", { class: "dot" }, "·"), easy)), el("span")];
   const showFront = () => {
     buttons.replaceChildren(action("Show", " ", reveal, "space"), action("Got it", "j", () => grade(w, 3)),
-      rung && rung.stage > 0 ? action("Easier", "↓", stepDown) : el("span"));
+      rung && rung.stage > 0 ? stay(action("easier", "↓", stepDown)) : el("span"));
     if (aux) { info.before(aux); gestures.word = cheat; }   /* tapping the key word peeks at its furigana */
   };
   const reveal = () => {
@@ -1677,8 +1813,8 @@ function renderChoice(w, note) {
     if (i < 0 || i >= options.length) return false;
     pick(options[i], grid.children[i]);
   };
-  touch = { down: stepDown, right: goBack };
-  buttons.append(action("Easier", "↓", stepDown));
+  touch = { down: stepDown, right: goBack, pull: () => pullTarget(false) };
+  buttons.append(stay(action("easier", "↓", stepDown)));
   app.append(card(el("div", { class: "hero en" }, w.gloss), el("div", { class: "answer" }, grid), buttons, info));
 }
 function renderType(w, note) {
@@ -1711,14 +1847,15 @@ function renderType(w, note) {
     const value = bare(input.value);
     settle(value ? accepted.has(value) : false);   /* Return on an empty box: don't know */
   });
-  buttons.append(action("Don't know", "", () => settle(false), " "), action("Easier", "↓", stepDown));
-  touch = { down: stepDown, right: goBack };
+  buttons.append(stay(action("Don't know", "", () => settle(false), " ")), stay(action("easier", "↓", stepDown)));
+  touch = { down: stepDown, right: goBack, pull: () => pullTarget(false) };
   app.append(card([el("div", { class: "hero en" }, w.gloss), input], answer, buttons, el("div", { class: "note" }, note)));
   input.focus();
 }
 
 /* ---------- done ---------- */
 function renderDone() {
+  if (!location.hash) { location.replace("#today"); return; }   /* the day's cards are done: back to Today */
   const waiting = S.week.ready ? backlogWaiting().length : 0;
   app.append(card([
     el("div", { class: "hero", lang: "ja" }, "お疲れ様"),
@@ -1823,7 +1960,7 @@ function startOver() {
   S.week = null; S.day = null; S.last = null;
   undo = null; viewedWeek = null;
   save();
-  location.hash = "";
+  location.hash = "#today";
 }
 /* Make a past week's words this week's again, reviewing from the first stage today. */
 function restartWeek(week) {
@@ -1837,7 +1974,7 @@ function restartWeek(week) {
   S.day = null; S.last = null;
   undo = null; viewedWeek = null;
   save();
-  location.hash = "";
+  location.hash = "#today";
 }
 function reviewStatus(w) {
   if (S.srs[w.id] && !S.week.ids.includes(w.id)) {
@@ -1943,9 +2080,9 @@ function renderWeek() {
   };
   list.append(el("p", { class: "credit" }, "Stroke order: AnimCJK (Arphic Public License). Sentences: Tatoeba (CC BY 2.0 FR). Translations: Google Translate. Words: JLPT lists via Jamie Sinclair."));
   app.append(list);
-  document.getElementById("label").replaceChildren(backLink("Back"));
+  document.getElementById("label").replaceChildren(backLink("Words", "#words"));
   keys = e => {
-    if (e.key === "Escape") location.hash = "";
+    if (e.key === "Escape") location.hash = "#words";
     else if (e.key === "ArrowLeft") stepWeek(-1);
     else if (e.key === "ArrowRight") stepWeek(1);
     else if (e.key === "ArrowDown") stepRow(1);
@@ -1967,6 +2104,7 @@ let listening = null;   /* { cards, at }; at -1 is the intro, past the end is th
 /* This week's words, or a listening practice's (all of them, not ten at a time). */
 function listenSource() {
   if (inPractice()) return [S.practice.ids, S.practice.ids.length];
+  if (listenIds) return [listenIds, LISTEN_SIZE];
   const week = weekList().pop();
   return [week ? week.ids : [], LISTEN_SIZE];
 }
@@ -2007,7 +2145,7 @@ function renderListen() {
     return;
   }
   const { cards, at } = listening;
-  const leave = () => { location.hash = ""; };
+  const leave = () => { location.hash = "#today"; };
   if (!cards.length) {
     keys = e => { if (e.key === "Escape") leave(); else return false; };
     return app.append(card(el("div", { class: "empty" }, inPractice() ? "No sentences for these words yet." : "No sentences for this week's words yet.")));
@@ -2035,12 +2173,7 @@ function renderListen() {
   const view = card(
     el("div", { class: "hero sentence", lang: "ja", onclick: selectSentence }, renderSentence(s, true, w)),
     answer,
-    el("div", { class: "actions hotkeys gestures slots five" },
-      action("Replay", " ", speak, "space"),
-      action("Show", "↓", () => reveal(1)),
-      action("Hide", "↑", () => reveal(-1)),
-      action("Back", "←", prevListen),
-      action("Next", "→", nextListen)),
+    el("div", { class: "actions hint" }, el("span", null, "tap: again"), el("span", null, "↓ text, then translation"), el("span", null, "← next")),
     el("div", { class: "note" }, (at + 1) + " / " + cards.length),
     "listen");
   const paint = () => {
@@ -2071,6 +2204,123 @@ function renderListen() {
   app.append(view);
   say(s.text);
   if (cards[at + 1]) aivis(cards[at + 1].s.text);   /* ready before → is pressed */
+}
+
+/* ---------- the three places: Today, Words, Memory ---------- */
+function renderDock(current) {
+  const dock = document.getElementById("dock");
+  if (!current) {
+    dock.replaceChildren(el("button", { class: "dots", ariaLabel: "More", title: "More: places, this card, settings", onclick: openSheet }, "···"));
+    return;
+  }
+  const tab = (hash, ja, en) => el("a", { href: hash, ...(current === hash.slice(1) ? { ariaCurrent: "page" } : {}) }, el("span", { lang: "ja" }, ja), en);
+  dock.replaceChildren(tab("#today", "今日", "Today"), tab("#words", "言葉", "Words"), tab("#memory", "記憶", "Memory"));
+}
+function openSheet() {
+  paintChrome();
+  document.getElementById("sheet").showModal();
+}
+const go = hash => { const sheet = document.getElementById("sheet"); if (sheet.open) sheet.close(); location.hash = hash; };
+function renderToday(mode) {
+  const today = currentDay(), w = S.week, r = S.srsDay;
+  const stage = w.ready ? daysBetween(w.madeOn || w.start, today) - 1 : null;
+  const d = S.day && S.day.date === today && stage !== null && stage >= 0 ? S.day : null;
+  const row = (title, count, sub, done, total, cls, onclick) => el(onclick ? "button" : "div",
+    { class: "trow" + (cls ? " " + cls : ""), ...(onclick ? { onclick } : {}) },
+    el("span", { class: "t" }, title), count, el("span", { class: "s" }, sub),
+    total ? el("span", { class: "bar" + (cls && cls.includes("srs") ? " srs" : "") }, el("i", { style: "width: " + Math.round(100 * done / total) + "%" })) : null);
+  const n = (text, cls) => el("span", { class: "n" + (cls ? " " + cls : "") }, text);
+  const rows = [], startCards = () => go("");
+  if (!w.ready) rows.push(row("Pick this week's words", n(w.ids.length + "/" + WEEK_SIZE),
+    "Keep the ones you don't know · " + (w.skipped || 0) + " skipped so far", w.ids.length, WEEK_SIZE, "go", startCards));
+  else if (stage < 0) rows.push(row("This week's words", n(String(w.ids.length)), "Picked · the stages start tomorrow with " + RUNG_NAMES[0], 0, 0, "done"));
+  else if (d) {
+    const left = d.queue.length + d.missed.length;
+    rows.push(row("This week's words", n(left ? String(left) : "done ✓"),
+      left ? "Day " + (stage + 1) + " of " + STAGES.length + " · starting with " + RUNG_NAMES[stage] : w.ids.length + " words" + (d.round > 1 ? " · some needed a second pass" : ""),
+      d.cleared.length, w.ids.length, left ? "go" : "done", left ? startCards : null));
+  }
+  const srsLeft = r ? r.queue.length + r.missed.length : 0;
+  if (r && r.total) rows.push(row("Spaced reviews", n(srsLeft ? String(srsLeft) : "done ✓", srsLeft ? "due" : ""),
+    srsLeft ? "Words from earlier weeks, in the hardest format you're likely to know" : r.total + " reviewed",
+    r.cleared.length, r.total, "srs " + (srsLeft ? "go" : "done"), srsLeft && mode === "srs" ? startCards : null));
+  else rows.push(row("Spaced reviews", n("none"), "Nothing due today", 0, 0, "done"));
+  const waiting = w.ready ? backlogWaiting().length : 0;
+  const cardsLeft = mode === "diag" || mode === "review" || mode === "srs";
+  const week = weekList().pop();
+  rows.push(row("Listen", el("span", { class: "n", lang: "ja" }, "聞く"),
+    week ? LISTEN_SIZE + " sentences with this week's words, by ear first" : "No words to listen to yet", 0, 0, "go", week ? () => { listenIds = null; go("#listen"); } : null));
+  const minutes = Math.max(1, Math.round(((d ? d.queue.length + d.missed.length : 0) + srsLeft) * 12 / 60));
+  const startLabel = mode === "diag" ? (w.ids.length || w.skipped ? "Continue picking" : "Pick this week's words")
+    : cardsLeft ? ((d && d.cleared.length) || (r && r.cleared.length) ? "Continue" : "Start") + " · about " + minutes + " min"
+    : "Listen · " + LISTEN_SIZE + " sentences";
+  const start = el("button", { class: "start" + (cardsLeft ? "" : " quiet"), onclick: cardsLeft ? startCards : () => { listenIds = null; go("#listen"); } }, startLabel);
+  const when = new Date(today + "T12:00").toLocaleDateString("en-US", { weekday: "long" })
+    + (stage === null ? " · a new week" : stage < 0 ? " · words picked" : " · week of " + shortDate(w.start) + ", day " + (stage + 1));
+  app.append(el("div", { class: "today" },
+    el("div", { class: "top" }, el("div", null, el("div", { class: "when" }, when), el("h1", { lang: "ja" }, "今日")),
+      el("button", { class: "dots", ariaLabel: "More", title: "Settings and more", onclick: openSheet }, "···")),
+    rows,
+    waiting ? el("div", { class: "waiting" }, el("span", null, waiting + " older words waiting"),
+      el("button", { onclick: () => reviewMore() }, "Add " + Math.min(MORE, waiting))) : null,
+    el("div", { class: "rest", lang: "ja" }, cardsLeft ? "" : "お疲れ様"),
+    start));
+  keys = e => { if (e.key === "Enter" || e.key === " ") start.click(); else return false; };
+}
+let wordsTab = "weeks", pendingWeek = null, listenIds = null;
+function renderWords() {
+  const weeks = weekList(), today = currentDay(), total = weeks.reduce((n, w) => n + w.ids.length, 0);
+  const trouble = troubleWords();
+  const tabs = el("div", { class: "tabs", role: "tablist", ariaLabel: "Which words" },
+    ["weeks", "trouble"].map(t => el("button", { role: "tab", ariaSelected: String(wordsTab === t), onclick: () => { wordsTab = t; render(); } },
+      t === "weeks" ? "Weeks" : "Trouble · " + trouble.length)));
+  const body = [];
+  if (wordsTab === "weeks") {
+    weeks.slice().reverse().forEach(week => {
+      const index = weeks.indexOf(week), ids = week.ids.filter(id => BY_ID.has(id));
+      let status, cls = "";
+      if (week === S.week) {
+        const stage = week.ready ? daysBetween(week.madeOn || week.start, today) : 0;
+        status = !week.ready ? "being picked" : stage < 1 ? "stages start tomorrow" : "day " + Math.min(stage, STAGES.length) + " of " + STAGES.length;
+      } else {
+        const days = ids.map(id => dueDayOf(wordKey(id))).filter(Boolean).sort();
+        const due = days.filter(x => x <= today).length;
+        if (due) { status = due + " due today"; cls = "due"; }
+        else status = days.length ? "next due " + new Date(days[0] + "T12:00").toLocaleDateString("en-US", { weekday: "short", month: daysBetween(today, days[0]) > 6 ? "short" : undefined, day: daysBetween(today, days[0]) > 6 ? "numeric" : undefined }) : "";
+      }
+      body.push(el("div", { class: "wk" },
+        el("div", { class: "h" }, el("b", null, week === S.week ? "This week" : "Week of " + shortDate(week.start)), el("span", { class: cls }, ids.length + " words" + (status ? " · " + status : ""))),
+        el("div", { class: "peek", lang: "ja" }, ids.slice(0, 9).map(id => BY_ID.get(id).word).join(" · ")),
+        el("div", { class: "acts" },
+          el("button", { onclick: () => openPractice({ source: "week", week: week.start }) }, "Practice"),
+          el("button", { onclick: () => { listenIds = ids; go("#listen"); } }, "Listen"),
+          el("button", { onclick: () => { pendingWeek = index === weeks.length - 1 ? null : index; go("#week"); } }, "All " + ids.length + " ›"))));
+    });
+    if (!weeks.length) body.push(el("p", { class: "empty" }, "No words yet: pick this week's words on Today."));
+  } else {
+    if (!trouble.length) body.push(el("p", { class: "empty" }, "Nothing missed this week, and no word missed twice. Good."));
+    else {
+      body.push(el("div", { class: "trouble" }, trouble.map(({ w, lapses }) => el("div", { class: "row" },
+        el("span", { class: "w", lang: "ja" }, w.word), el("span", { class: "c" }, w.capsule || w.gloss),
+        el("span", { class: "lapses", title: lapses + (lapses === 1 ? " lapse" : " lapses") }, "●".repeat(Math.min(5, Math.max(1, lapses))))))));
+      body.push(el("button", { class: "start", onclick: () => startPractice(trouble.map(x => x.w.id), (S.practiceOpts && S.practiceOpts.format) || "3", "Trouble words") },
+        "Practice these " + trouble.length));
+    }
+  }
+  app.append(el("div", { class: "words" },
+    el("div", { class: "top" }, el("h1", { lang: "ja" }, "言葉"), el("span", { class: "total" }, total + " words · " + weeks.length + (weeks.length === 1 ? " week" : " weeks"))),
+    tabs, body));
+}
+/* Missed in the last week, or lapsed twice or more: most lapses first. */
+function troubleWords() {
+  const today = currentDay(), cards = memory().cards, out = [];
+  for (const [id, r] of Object.entries(S.results)) {
+    const w = BY_ID.get(id), m = cards.get(wordKey(id));
+    if (!w) continue;
+    const lapses = m ? m.lapses : 0, recent = r.missedOn && daysBetween(r.missedOn, today) < 7;
+    if (recent || lapses >= 2) out.push({ w, lapses: Math.max(lapses, recent ? 1 : 0) });
+  }
+  return out.sort((a, b) => b.lapses - a.lapses);
 }
 
 /* ---------- memory: a word's recall, and the memory page ---------- */
@@ -2181,6 +2431,8 @@ function renderMemory() {
   const pick = sched => { S.sched = sched; S.srsDay = null; save(); render(); };   /* today's queue is rebuilt by the new scheduler */
   const setTarget = by => { S.target = Math.round(Math.min(0.97, Math.max(0.75, S.target + by)) * 100) / 100; S.srsDay = null; save(); render(); };
   app.append(el("div", { class: "stats" },
+    el("h1", { lang: "ja", style: "font: 400 3.2rem/1.2 var(--ja); margin: 0" }, "記憶"),
+    renderHeatmap(),
     el("section", null, el("h2", null, "Coming up"),
       el("div", { class: "bars", role: "img", ariaLabel: "Reviews due over the next 7 days: " + counts.join(", ") },
         counts.map(n => el("div", null, String(n), el("i", { style: "height: " + (n / top * 84).toFixed(0) + "px" })))),
@@ -2220,7 +2472,7 @@ function renderMemory() {
           startRwkv();
           render();
         } }, rwkv.describe())))));
-  keys = e => { if (e.key === "Escape") location.hash = "#week"; else return false; };
+  keys = e => { if (e.key === "Escape") location.hash = "#today"; else return false; };
 }
 
 /* ---------- practice ---------- */
@@ -2228,7 +2480,7 @@ function renderMemory() {
    word's record and the heatmap, but S.day and the week are left alone. */
 const MISSED_WITHIN = [[1, "today"], [3, "in the last 3 days"], [7, "in the last week"], [14, "in the last 2 weeks"], [30, "in the last month"], [0, "ever"]];
 const FORMATS = STAGES.map((stage, i) => [String(i), stage.label]).concat([["listen", "Listening"]]);
-const backLink = text => el("a", { href: "#", style: "text-decoration:none" }, "← " + text);
+const backLink = (text, href = "#today") => el("a", { href, style: "text-decoration:none" }, "← " + text);
 function practiceIds(o) {
   if (o.source === "week") {
     const week = weekList().find(w => w.start === o.week);
@@ -2314,7 +2566,7 @@ function openPractice(preset) {
 }
 function renderPractice() {
   const p = S.practice;
-  if (!p) { location.hash = ""; return; }
+  if (!p) { location.hash = "#today"; return; }
   if (p.stage === null) return renderListen();
   document.getElementById("label").replaceChildren(backLink("Practice · " + STAGES[p.stage].label));
   document.getElementById("label").title = p.title;
@@ -2330,7 +2582,7 @@ function renderPractice() {
       action("Again", "", () => again(p.ids)),
       slipped ? action("Just the missed", "", () => again(p.slipped.slice())) : null,
       action("Other practice", "p", () => openPractice()),
-      action("Back", "esc", () => { location.hash = ""; }))));
+      action("Back", "esc", () => { location.hash = "#today"; }))));
 }
 
 /* ---------- chrome ---------- */
@@ -2454,7 +2706,18 @@ function explainGoogle() {
 /* ---------- touch ---------- */
 /* Swipes and taps call the view's `touch` handlers, the way keys call `keys`.
    Touch events, not pointer events, so a vertical scroll never cancels the gesture. */
-const SWIPE_MIN = 50, SWIPE_MS = 700, EDGE = 24;
+const SWIPE_MIN = 50, SWIPE_MS = 700, EDGE = 24, PULL_AT = 80;
+let pullReady = false;
+function showPull(dy) {
+  const box = document.getElementById("pull"), target = dy !== null && touch && touch.pull && touch.pull();
+  if (!target || dy < 12) { box.hidden = true; pullReady = false; return; }
+  const ready = dy >= PULL_AT;
+  if (ready !== pullReady) { pullReady = ready; if (ready) tick(); }
+  box.classList.toggle("ready", ready);
+  box.replaceChildren(el("span", { class: "cap" }, ready ? target.cap : "Pull further for"), el("span", { class: "name" }, target.name),
+    target.why ? el("span", { class: "why" }, target.why) : "");
+  box.hidden = false;
+}
 let lastPointer = "mouse", swipe = null;
 addEventListener("pointerdown", e => { lastPointer = e.pointerType; }, { capture: true, passive: true });
 const swipeCard = () => app.querySelector("main");
@@ -2481,6 +2744,7 @@ function showStrength(dx) {
 }
 function dropSwipe(settle) {
   showStrength(null);
+  if (!settle) showPull(null);
   const card = swipe && swipe.card;
   swipe = null;
   if (!card || !card.isConnected) return;
@@ -2500,6 +2764,16 @@ app.addEventListener("touchmove", e => {
   if (!swipe || !swipe.card) return;
   const t = e.touches[0], dx = t.clientX - swipe.x, dy = t.clientY - swipe.y;
   /* The card follows the finger only toward a side that does something. */
+  if (dy > 0 && dy > Math.abs(dx) && touch && touch.pull && touch.pull()) {   /* pulling the prompt down */
+    swipe.pulling = true;
+    swipe.card.classList.remove("settling");
+    swipe.card.classList.add("dragging");
+    swipe.card.style.transform = "translateY(" + Math.min(dy * 0.5, 90) + "px)";
+    swipe.card.style.opacity = Math.max(0.5, 1 - dy / 400);
+    showPull(dy);
+    return;
+  }
+  if (swipe.pulling) { swipe.pulling = false; showPull(null); }
   if (Math.abs(dx) > Math.abs(dy) && touch && touch[dx > 0 ? "right" : "left"]) {
     swipe.card.classList.remove("settling");
     swipe.card.classList.add("dragging");
@@ -2515,6 +2789,13 @@ app.addEventListener("touchend", e => {
   if (!swipe) return;
   const t = e.changedTouches[0], dx = t.clientX - swipe.x, dy = t.clientY - swipe.y;
   const quick = Date.now() - swipe.at < SWIPE_MS, still = scrollY === swipe.scroll;
+  if (swipe.pulling) {   /* a pull goes by distance, however slow */
+    const go = dy >= PULL_AT && touch && touch.down;
+    showPull(null);
+    dropSwipe(!go);
+    if (go) touch.down(dy);
+    return;
+  }
   let dir = null;
   if (Math.abs(dx) >= SWIPE_MIN && Math.abs(dx) > 1.5 * Math.abs(dy)) dir = dx > 0 ? "right" : "left";
   else if (still && Math.abs(dy) >= SWIPE_MIN && Math.abs(dy) > 1.5 * Math.abs(dx)) dir = dy > 0 ? "down" : "up";
@@ -2713,12 +2994,25 @@ function paintChrome() {
   document.getElementById("strokeBtn").classList.toggle("on", S.strokes);
   document.getElementById("voiceBtn").classList.toggle("on", S.voice);
   document.getElementById("speedBtn").textContent = S.strokeSpeed;
+  document.getElementById("strokeBtn").textContent = S.strokes ? "on" : "off";
+  document.getElementById("voiceBtn").textContent = S.voice ? "on" : "off";
+  document.getElementById("zenBtn").textContent = S.plain ? "shown" : "gestures only";
+  document.getElementById("themeBtn").textContent = S.theme || "system";
 }
 const openListen = () => { location.hash = "#listen"; };
-document.getElementById("listenBtn").addEventListener("click", openListen);
-document.getElementById("practiceBtn").addEventListener("click", () => openPractice());
+const sheet = document.getElementById("sheet");
+sheet.addEventListener("click", e => {
+  if (e.target === sheet) return sheet.close();   /* a tap on the backdrop */
+  setTimeout(paintChrome);   /* after the button's own handler */
+});
+document.getElementById("todayBtn").addEventListener("click", () => go("#today"));
+document.getElementById("listenBtn").addEventListener("click", () => { listenIds = null; go("#listen"); });
+document.getElementById("practiceBtn").addEventListener("click", () => { sheet.close(); openPractice(); });
+document.getElementById("lookBtn").addEventListener("click", () => { if (lookup) window.open(wordUrl(lookup), "_blank", "noopener"); });
+document.getElementById("strokesOnceBtn").addEventListener("click", () => { sheet.close(); if (strokeHero) drawWord(strokeHero, true); });
+document.getElementById("endBtn").addEventListener("click", () => { location.hash = "#today"; });
 document.getElementById("graded").addEventListener("click", undoGrade);
-document.getElementById("memoryBtn").addEventListener("click", () => { location.hash = "#memory"; });
+document.getElementById("memoryBtn").addEventListener("click", () => go("#memory"));
 document.getElementById("strokeBtn").addEventListener("click", toggleStrokes);
 document.getElementById("voiceBtn").addEventListener("click", toggleVoice);
 document.getElementById("speakerBtn").addEventListener("click", cycleSpeaker);
@@ -2727,7 +3021,7 @@ document.getElementById("fontBtn").addEventListener("click", cycleFont);
 document.getElementById("speedBtn").addEventListener("click", cycleStrokeSpeed);
 document.getElementById("zenBtn").addEventListener("click", toggleZen);
 document.getElementById("themeBtn").addEventListener("click", toggleTheme);
-document.getElementById("askBtn").addEventListener("click", explainGoogle);
+document.getElementById("askBtn").addEventListener("click", () => { sheet.close(); explainGoogle(); });
 document.getElementById("syncBtn").addEventListener("click", clickSync);
 paintChrome();
 const holdShift = held => document.body.classList.toggle("shift", held);
@@ -2735,14 +3029,14 @@ document.addEventListener("keyup", e => { if (e.key === "Shift") holdShift(false
 addEventListener("blur", () => holdShift(false));
 document.addEventListener("keydown", e => {
   if (e.key === "Shift") holdShift(true);
-  if (e.metaKey || e.ctrlKey || e.altKey || (practiceDialog && practiceDialog.open)) return;
+  if (e.metaKey || e.ctrlKey || e.altKey || (practiceDialog && practiceDialog.open) || document.getElementById("sheet").open) return;
   const typing = e.target.tagName === "INPUT";
   if (e.key === "Escape" && !document.getElementById("explain").hidden) { e.preventDefault(); return closeExplain(); }
   if ((e.key === "e" || e.key === "E") && (!typing || e.target.readOnly)) {
     e.preventDefault();
     return e.key === "e" ? explain() : explainGoogle();
   }
-  if (e.key === "Escape" && location.hash === "#practice") { e.preventDefault(); location.hash = ""; return; }
+  if (e.key === "Escape" && (!location.hash || location.hash === "#practice")) { e.preventDefault(); location.hash = "#today"; return; }
   if (keys && (!typing || e.target.readOnly) && keys(e) !== false) { e.preventDefault(); return; }
   if ((e.key === "ArrowLeft" || e.key === "ArrowRight") && !location.hash
       && (!typing || e.target.readOnly || !e.target.value)) {
@@ -2760,7 +3054,9 @@ document.addEventListener("keydown", e => {
   else if (e.key === "c") cycleFont();
   else if (e.key === "z") toggleZen();
   else if (e.key === "d") toggleTheme();
-  else if (e.key === "a") openListen();
+  else if (e.key === "a") { listenIds = null; location.hash = "#listen"; }
+  else if (e.key === "t") location.hash = "#today";
+  else if (e.key === ".") openSheet();
   else if (e.key === "p") openPractice();
   else if (e.key === "m") location.hash = "#memory";
   else if (e.key === "u" && lastGrade && (!location.hash || location.hash === "#practice")) undoGrade();
@@ -2770,20 +3066,26 @@ document.addEventListener("keydown", e => {
   else if (e.key === "y") syncNow();
   else if (e.key === "Y") setupSync();
 });
-addEventListener("hashchange", () => { viewedWeek = null; listening = null; lastGrade = null; hideGraded(); render(); });
+addEventListener("hashchange", () => {
+  viewedWeek = location.hash === "#week" ? pendingWeek : null;
+  pendingWeek = null;
+  if (location.hash !== "#listen") listenIds = null;
+  listening = null; lastGrade = null; hideGraded(); render();
+});
 document.addEventListener("visibilitychange", () => {
   if (syncCfg && (document.visibilityState === "visible" || isDirty())) syncNow();   /* pull on return, push on leave */
-  if (document.visibilityState !== "visible" || location.hash) return;
+  if (document.visibilityState !== "visible" || (location.hash && location.hash !== "#today")) return;
   if (renderedOn !== currentDay()) render();
 });
 /* The card's zones sit between the header and the navbar, whatever their height. */
 const measureChrome = () => {
   const root = document.documentElement.style;
   root.setProperty("--headH", document.querySelector("header").offsetHeight + "px");
-  root.setProperty("--footH", document.querySelector("footer").offsetHeight + "px");
+  root.setProperty("--footH", document.getElementById("dock").offsetHeight + "px");
 };
 new ResizeObserver(measureChrome).observe(document.querySelector("header"));
-new ResizeObserver(measureChrome).observe(document.querySelector("footer"));
+new ResizeObserver(measureChrome).observe(document.getElementById("dock"));
+if (!location.hash) history.replaceState(null, "", "#today");   /* the app opens on Today */
 render();
 if (syncCfg) syncNow();
 setTimeout(startRwkv, 1500);   /* after the first card is up */
