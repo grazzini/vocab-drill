@@ -365,7 +365,7 @@ rt { -webkit-user-select: none; user-select: none; }   /* selecting a sentence f
   <button id="speedBtnTts" title="Speech speed (- slower, = faster, click to reset)"></button>
   <button id="askBtn" class="touchOnly" title="Explain the selection or sentence (Google AI Mode)">explain</button>
   <button id="syncBtn" title="Sync to GitHub (y; Y for settings)">sync</button>
-  <span id="build" title="Build of this page">e55cfde</span>
+  <span id="build" title="Build of this page">836c6c6</span>
 </footer>
 <div id="explain" hidden></div>
 
@@ -396,7 +396,7 @@ function loadState() {
   try { return JSON.parse(localStorage.getItem(STORE_KEY)) || {}; }
   catch { return {}; }
 }
-const DEFAULTS = { status: {}, results: {}, week: null, day: null, last: null, plain: false, theme: null, strokes: false, strokeSpeed: "quick", font: "animation", history: [], voice: false, log: {}, weeks: [], practice: null, practiceOpts: null, revlog: [], srs: {}, srsDay: null, sched: "fsrs", target: 0.9 };
+const DEFAULTS = { status: {}, results: {}, week: null, day: null, last: null, plain: false, theme: null, strokes: false, strokeSpeed: "quick", font: "textbook", history: [], voice: false, log: {}, weeks: [], practice: null, practiceOpts: null, revlog: [], srs: {}, srsDay: null, sched: "fsrs", target: 0.9 };
 const S = Object.assign(structuredClone(DEFAULTS), loadState());
 /* Older saves kept only the previous week's words, without its date. */
 if (S.prev && S.prev.length && !S.weeks.length && S.week) {
@@ -463,6 +463,9 @@ if (!S.missBackfilled) {
    ms is how long the answer took. Seed entries (1 in the sixth place) only stand in for reviews from before
    the log existed, so a past week's words can be scheduled; they are never shown to RWKV. */
 const RECOGNITION = 0, PRODUCTION = 1, GRADES = ["", "Again", "Hard", "Good", "Easy"];
+/* One card per word: the format a review is asked in doesn't matter to the schedule. Entries logged
+   before this as production (card 1) fold into the word's one card. */
+const wordKey = id => cardKey(id, RECOGNITION);
 const cardKey = (id, card) => id + "#" + card;
 /* Queue items are word ids (the week's stages, practice) or card keys (reviews). */
 function splitKey(item) {
@@ -523,8 +526,8 @@ let memo = null;
 function memory() {
   if (memo) return memo;
   const cards = new Map(), preds = [];
-  for (const [t, id, card, g, , seed] of S.revlog) {
-    const key = cardKey(id, card), m = cards.get(key);
+  for (const [t, id, , g, , seed] of S.revlog) {
+    const key = wordKey(id), m = cards.get(key);
     const days = m ? (t - m.last) / 86400 : 0;
     preds.push(m && !seed ? fsrs.recall(days, m.s) : null);
     const next = fsrs.next(m, g, days);
@@ -571,6 +574,7 @@ const rwkv = {
 };
 function rwkvPost(type, entries) {
   rwkv.pending.push(type);
+  entries = entries.map(e => e[2] ? [e[0], e[1], RECOGNITION, ...e.slice(3)] : e);
   rwkv.worker.postMessage({ type, [type === "replay" ? "log" : "entries"]: entries,
     dayStartHour: DAY_STARTS_AT, tzOffsetMinutes: -new Date().getTimezoneOffset() });
 }
@@ -643,11 +647,9 @@ function enrollPast() {
       if (S.srs[id] || !BY_ID.has(id)) continue;
       S.srs[id] = end;
       const r = S.results[id];
-      for (const card of [RECOGNITION, PRODUCTION]) {
-        if (known.has(cardKey(id, card))) continue;
-        S.revlog.push([t, id, card, r && r.last ? 3 : 1, 0, 1]);
-        seeded = true;
-      }
+      if (known.has(wordKey(id))) continue;
+      S.revlog.push([t, id, RECOGNITION, r && r.last ? 3 : 1, 0, 1]);
+      seeded = true;
     }
   }
   if (seeded) { S.revlog.sort((a, b) => a[0] - b[0]); memo = null; rwkvReplay(); }
@@ -660,12 +662,9 @@ function dueCards() {
   const today = currentDay(), now = nowSeconds(), out = [], backlog = [], cards = memory().cards;
   for (const id of Object.keys(S.srs)) {
     if (!BY_ID.has(id) || (S.week && S.week.ids.includes(id))) continue;   /* a restarted week's words review as stages */
-    /* One card per word a day, as Anki buries siblings: the one less likely to be remembered. */
-    const due = [RECOGNITION, PRODUCTION].map(card => cardKey(id, card))
-      .filter(key => { const day = dueDayOf(key); return day && day <= today; })
-      .map(key => [key, recallOf(key, now)]).sort((a, b) => a[1] - b[1]);
-    if (!due.length) continue;
-    (cards.get(due[0][0]).history.every(h => h[3]) ? backlog : out).push(due[0]);
+    const key = wordKey(id), day = dueDayOf(key);
+    if (!day || day > today) continue;
+    (cards.get(key).history.every(h => h[3]) ? backlog : out).push([key, recallOf(key, now)]);
   }
   const byRecall = (a, b) => a[1] - b[1];
   return [out.sort(byRecall), backlog.sort(byRecall)];
@@ -1033,7 +1032,8 @@ function toggleVoice() {
 /* ---------- stroke order (AnimCJK, pinned commit) ---------- */
 /* Not jsDelivr: the repo is over its 50 MB limit, so uncached files return 403. */
 const ANIMCJK = "https://raw.githubusercontent.com/parsimonhi/animCJK/d688a07991b888565fb289590e760c7e6bd33e83/";
-const FONTS = ["animation", "textbook", "mincho", "gothic", "rounded", "edomoji", "calligraphy"];
+/* Stroke mode is not a font: with it on, the word rests as the end of its stroke animation. */
+const FONTS = ["textbook", "mincho", "gothic", "rounded", "edomoji", "calligraphy"];
 const STROKE_SPEEDS = { quick: 0.22, fast: 0.1, slow: 0.5 };   /* seconds per stroke */
 const STROKE_GAP = 0.03;
 let strokeHero = null;   /* hero the s key redraws */
@@ -1093,13 +1093,13 @@ async function drawWord(hero, animate) {
     span.classList.add("drawing");
     span.append(svg);
   });
-  if (!animate || S.font === "animation") return;
+  if (!animate || S.strokes) return;   /* in stroke mode the drawing stays */
   await new Promise(done => setTimeout(done, time * 1000 + 400));
   if (run === strokeRun) clearStrokes(chars);
 }
 /* The word at rest: AnimCJK letterforms, or the chosen font. */
 function restWord(hero) {
-  if (S.font === "animation") return drawWord(hero, false);
+  if (S.strokes) return drawWord(hero, false);
   strokeRun = null;
   clearStrokes(strokeChars(hero));
 }
@@ -1111,7 +1111,7 @@ function showStrokes(hero) {
 }
 /* Load the next word's files so its card does not start in the fallback font. */
 function warmStrokes(w) {
-  if (w && (S.strokes || S.font === "animation")) [...w.word].filter(c => /[\u3040-\u30ff\u3400-\u9fff]/.test(c)).forEach(c => fetchStrokes(c));
+  if (w && S.strokes) [...w.word].filter(c => /[\u3040-\u30ff\u3400-\u9fff]/.test(c)).forEach(c => fetchStrokes(c));
 }
 
 /* ---------- routing ---------- */
@@ -1233,10 +1233,8 @@ function updateCount(mode) {
     el("span", { class: "seg " + cls, style: "flex: " + total }, el("span", { style: "width: " + Math.min(100, 100 * done / total) + "%" }))));
   document.getElementById("skipped").textContent = mode === "diag" ? (S.week.skipped || 0) + " skipped" : "";
   if (inPractice()) label.textContent = "";
-  else if (mode === "srs") {
-    const next = S.srsDay.queue[0] || "";
-    label.textContent = "Review · " + (splitKey(next).card === PRODUCTION ? "Production" : "Recognition");
-  } else label.textContent = mode === "diag" ? "Diagnostic" : mode === "review" ? STAGES[S.day.stage].label : "";
+  else if (mode === "srs") label.textContent = "SRS review";
+  else label.textContent = mode === "diag" ? "Diagnostic" : mode === "review" ? STAGES[S.day.stage].label : "";
 }
 
 /* ---------- history (view only) ---------- */
@@ -1371,9 +1369,26 @@ function action(text, key, handler, keyName) {
 const inPractice = () => location.hash === "#practice" && !!S.practice;
 const session = () => sessionMode === "practice" ? S.practice : sessionMode === "srs" ? S.srsDay : S.day;
 /* Which stage shows a queue item: a review card's own format, else the session's stage. */
+/* The formats, easiest to hardest, are the stages: 0 sentence with furigana, 1 sentence, 2 word with
+   furigana, 3 word, 4 choose, 5 type. A card starts on a rung and swipes down to easier ones; the answer
+   is below the last. Week stages start on the day's stage; reviews by how likely the word is remembered
+   (or at random): the surer it is, the harder the format. */
+let rung = null;   /* { item, d, stage, steps } for the card on screen */
+function startStage(d, item) {
+  if (splitKey(item).card === null) return d.stage;
+  if (S.formatPick === "random") return 1 + Math.floor(Math.random() * 5);
+  const r = recallOf(item);
+  return r === null ? 3 : r >= 0.92 ? 5 : r >= 0.85 ? 4 : r >= 0.75 ? 3 : r >= 0.6 ? 2 : 1;
+}
 function itemStage(d, item) {
-  const { card } = splitKey(item);
-  return card === null ? d.stage : card === PRODUCTION ? 5 : 3;
+  if (!rung || rung.item !== item || rung.d !== d) rung = { item, d, stage: startStage(d, item), steps: 0 };
+  return rung.stage;
+}
+function stepDown() {
+  if (!rung || rung.stage === 0) return false;
+  rung.stage--;
+  rung.steps++;
+  render();
 }
 /* The last grade, so it can be taken back: what it changed, as it was before. */
 let lastGrade = null;
@@ -1381,10 +1396,12 @@ function grade(w, rating) {
   const before = session(), today = currentDay();
   lastGrade = { w, rating, mode: sessionMode, session: structuredClone(before), result: S.results[w.id] ? { ...S.results[w.id] } : null,
     revlog: S.revlog.length, logged: S.log[today] || 0, today, history: S.history.length, last: S.last };
+  if (rung && rung.steps && rating > 2) rating = 2;   /* needed an easier format: Hard at best */
+  rung = null;
   const d = before, item = d.queue.shift(), correct = rating > 1;
   (correct ? d.cleared : d.missed).push(item);
   if (!correct && d.slipped && !d.slipped.includes(w.id)) d.slipped.push(w.id);
-  logAnswer(w.id, STAGES[itemStage(d, item)].kind === "id" ? RECOGNITION : PRODUCTION, rating);
+  logAnswer(w.id, RECOGNITION, rating);
   const result = S.results[w.id] || (S.results[w.id] = { passed: 0, total: 0, last: false });
   result.passed += correct ? 1 : 0;
   result.total++;
@@ -1442,11 +1459,15 @@ function renderCard() {
   if (!w) { d.queue.shift(); save(); return render(); }
   prefetch(stage);
   if (!stage.context && d.queue[1]) warmStrokes(BY_ID.get(splitKey(d.queue[1]).id));
-  const { card } = splitKey(item), m = card !== null && memory().cards.get(item);
+  const { card } = splitKey(item), m = card !== null && memory().cards.get(wordKey(w.id));
   const seen = m && !m.history[m.history.length - 1][3] ? daysBetween(dayOfSeconds(m.last), currentDay()) : null;
-  const note = d.round > 1 ? "Missed words · " + d.queue.length + " left"
-    : seen === null ? "" : seen === 0 ? "seen earlier today" : "seen " + (seen === 1 ? "yesterday" : seen + " days ago");
-  if (stage.kind === "id") renderRecognition(w, stage, note, card === null ? null : item);
+  const srs = sessionMode === "srs";
+  const note = [srs ? "SRS review" : "",
+    d.round > 1 ? (srs ? "second pass, " : "Missed words · ") + d.queue.length + " left"
+      : seen === null ? "" : seen === 0 ? "seen earlier today" : "seen " + (seen === 1 ? "yesterday" : seen + " days ago"),
+    rung.steps ? "easier format: Got it counts as Hard" : ""].filter(Boolean).join(" · ");
+  if (sessionMode !== "practice") document.getElementById("label").textContent = (srs ? "SRS review · " : "") + stage.label;
+  if (stage.kind === "id") renderRecognition(w, stage, note, S.srs[w.id] ? wordKey(w.id) : null);
   else if (stage.kind === "choice") renderChoice(w, note);
   else renderType(w, note);
 }
@@ -1468,15 +1489,17 @@ function renderRecognition(w, stage, note, key) {
      more than 160px, so it's no reach on a tablet). Missed and Hard stay buttons. */
   const EASY_AT = Math.min(160, innerWidth * 0.3);
   const strength = dx => -dx < EASY_AT ? 3 : 4;
-  const gestures = touch = { left: dx => grade(w, dx ? strength(dx) : 3), right: goBack, down: () => reveal(), up: () => conceal(), tap: speak,
-    strength: dx => { const g = strength(dx), n = key && nextInterval(key, g); return { g, next: n ? "next in " + inDays(n) : "" }; } };
+  const easier = () => shown ? null : rung && rung.stage > 0 ? stepDown() : reveal();
+  const gestures = touch = { left: dx => grade(w, dx ? strength(dx) : 3), right: goBack, down: easier, up: () => conceal(), tap: speak,
+    strength: dx => { const g = rung && rung.steps ? 2 : strength(dx), n = key && nextInterval(key, g); return { g, next: n ? "next in " + inDays(n) : "" }; } };
   /* Hard · easy sit under Got it; on the front the row is kept empty so nothing moves. */
   const easy = action("easy", "4", () => grade(w, 4));
   easy.classList.add("easy");
   const extra = () => [el("span"), stay(el("div", { class: "grades" },
     action("hard", "2", () => grade(w, 2)), el("span", { class: "dot" }, "·"), easy)), el("span")];
   const showFront = () => {
-    buttons.replaceChildren(action("Show", " ", reveal, "space"), action("Got it", "j", () => grade(w, 3)), el("span"));
+    buttons.replaceChildren(action("Show", " ", reveal, "space"), action("Got it", "j", () => grade(w, 3)),
+      rung && rung.stage > 0 ? action("Easier", "↓", stepDown) : el("span"));
     if (aux) { info.before(aux); gestures.word = cheat; }   /* tapping the key word peeks at its furigana */
   };
   const reveal = () => {
@@ -1507,6 +1530,8 @@ function renderRecognition(w, stage, note, key) {
     else if (shown && e.key === "k") grade(w, 1);
     else if (/^[1-4]$/.test(e.key) && (shown || e.key !== "1")) grade(w, +e.key);
     else if (aux && !shown && e.key === "f") cheat();
+    else if (e.key === "ArrowDown" && !shown) easier();
+    else if (e.key === "ArrowUp") conceal();
     else return false;
   };
   const info = el("span", null, note);
@@ -1561,7 +1586,7 @@ function renderChoice(w, note) {
     buttons.replaceChildren(action("Next", "Enter", () => grade(w, correct ? 3 : 1), "enter"));
     keys = e => { if (e.key === "Enter" || e.key === " ") grade(w, correct ? 3 : 1); else return false; };
     const next = () => grade(w, correct ? 3 : 1);
-    touch = { left: next, right: next, up: speak, down: () => stepHistory(-1), tap: next };
+    touch = { left: next, right: next, up: speak, tap: next };
     lookup = w;
     info.replaceChildren(el("span", { lang: "ja" }, linkedWord(w, false), " ", w.kana));
     announce();
@@ -1572,11 +1597,13 @@ function renderChoice(w, note) {
   }));
   const info = el("div", { class: "note" }, note);
   keys = e => {
+    if (e.key === "ArrowDown") return stepDown();
     const i = "1234".indexOf(e.key);
     if (i < 0 || i >= options.length) return false;
     pick(options[i], grid.children[i]);
   };
-  touch = { down: () => stepHistory(-1) };
+  touch = { down: stepDown, right: goBack };
+  buttons.append(action("Easier", "↓", stepDown));
   app.append(card(el("div", { class: "hero en" }, w.gloss), el("div", { class: "answer" }, grid), buttons, info));
 }
 function renderType(w, note) {
@@ -1599,16 +1626,18 @@ function renderType(w, note) {
     buttons.replaceChildren(action("Next", "Enter", () => grade(w, correct ? 3 : 1), "enter"));
     keys = e => { if (e.key === "Enter") grade(w, correct ? 3 : 1); else return false; };
     const next = () => grade(w, correct ? 3 : 1);
-    touch = { left: next, right: next, up: speak, down: () => stepHistory(-1), tap: next };
+    touch = { left: next, right: next, up: speak, tap: next };
   };
   input.addEventListener("keydown", e => {
+    if (!settled && e.key === "ArrowDown" && !input.value) { e.preventDefault(); e.stopPropagation(); return stepDown(); }
     if (settled || e.key !== "Enter" || e.isComposing || e.keyCode === 229) return;
     e.preventDefault();
     e.stopPropagation();
     const value = bare(input.value);
     settle(value ? accepted.has(value) : false);   /* Return on an empty box: don't know */
   });
-  buttons.append(action("Don't know", "", () => settle(false), " "));
+  buttons.append(action("Don't know", "", () => settle(false), " "), action("Easier", "↓", stepDown));
+  touch = { down: stepDown, right: goBack };
   app.append(card([el("div", { class: "hero en" }, w.gloss), input], answer, buttons, el("div", { class: "note" }, note)));
   input.focus();
 }
@@ -1732,7 +1761,7 @@ function restartWeek(week) {
 }
 function reviewStatus(w) {
   if (S.srs[w.id] && !S.week.ids.includes(w.id)) {
-    const days = [RECOGNITION, PRODUCTION].map(card => dueDayOf(cardKey(w.id, card))).filter(Boolean).sort();
+    const days = [dueDayOf(wordKey(w.id))].filter(Boolean);
     if (days.length) {
       const n = daysBetween(currentDay(), days[0]);
       return el("span", { class: "st", title: "Next review " + shortDate(days[0]) },
@@ -2006,8 +2035,8 @@ function recallChart(key) {
     svgEl("text", { x: x(now), y: H + 4, "text-anchor": "middle", fill: "var(--accent)" }, "now"));
 }
 function memoryPanel(w) {
-  const cards = memory().cards, keys = [RECOGNITION, PRODUCTION].map(card => cardKey(w.id, card));
-  if (!keys.some(k => cards.has(k))) return null;
+  const cards = memory().cards, keys = [wordKey(w.id)];
+  if (!cards.has(keys[0])) return null;
   const today = currentDay(), enrolled = S.srs[w.id] && !S.week.ids.includes(w.id);
   const line = (name, key) => {
     const m = cards.get(key);
@@ -2023,7 +2052,7 @@ function memoryPanel(w) {
       due ? el("span", { class: due <= today ? "due" : "empty" }, due <= today ? "due today" : "next " + shortDate(due))
         : el("span", { class: "empty" }, "in this week's stages")),
     recallChart(rec),
-    el("div", { class: "cards" }, line("Recognition", keys[0]), line("Production", keys[1])));
+    el("div", { class: "cards" }, line("This word", keys[0])));
 }
 /* Log loss and calibration of each model's predictions on the real answers of the last 30 days. */
 function scoreModels() {
@@ -2048,12 +2077,10 @@ function renderMemory() {
   const today = currentDay(), counts = Array(7).fill(0);
   for (const id of Object.keys(S.srs)) {
     if (!BY_ID.has(id) || S.week.ids.includes(id)) continue;
-    for (const card of [RECOGNITION, PRODUCTION]) {
-      const day = dueDayOf(cardKey(id, card));
-      if (!day) continue;
-      const n = Math.max(0, daysBetween(today, day));
-      if (n < 7) counts[n]++;
-    }
+    const day = dueDayOf(wordKey(id));
+    if (!day) continue;
+    const n = Math.max(0, daysBetween(today, day));
+    if (n < 7) counts[n]++;
   }
   if (S.srsDay && S.srsDay.date === today) counts[0] = S.srsDay.queue.length + S.srsDay.missed.length;   /* what's left today */
   /* The backlog not in today's queue arrives backlogPerDay() a day. */
@@ -2095,6 +2122,10 @@ function renderMemory() {
       el("div", { class: "seg2", role: "radiogroup", ariaLabel: "Scheduler" },
         el("button", { role: "radio", ariaChecked: String(S.sched === "fsrs"), onclick: () => pick("fsrs") }, "FSRS-6"),
         el("button", { role: "radio", ariaChecked: String(S.sched === "rwkv"), disabled: !rwkv.curves, onclick: () => pick("rwkv") }, "RWKV-Curve")),
+      el("div", { class: "setting" }, el("span", null, "Review format"),
+        el("button", { class: "sub", title: "How a review picks its starting format", onclick: () => {
+          S.formatPick = S.formatPick === "random" ? "recall" : "random"; save(); render(); } },
+          S.formatPick === "random" ? "random" : "harder when sure")),
       el("div", { class: "setting" }, el("span", null, "Target recall"),
         el("span", { class: "step" },
           el("button", { ariaLabel: "Lower target", onclick: () => setTarget(-0.01) }, "−"),
@@ -2349,34 +2380,10 @@ addEventListener("pointerdown", e => { lastPointer = e.pointerType; }, { capture
 const swipeCard = () => app.querySelector("main");
 /* A tick each time a swipe crosses into another grade: vibrate where there is one (Android);
    on iOS 18+ toggling a hidden switch control gives the system's haptic. */
-function tick(g) {
+function tick() {
   if (navigator.vibrate) navigator.vibrate(100);
   else document.querySelector(".haptic").click();
-  clickSound(g);
 }
-/* And a click, for devices with no vibration motor: higher for each easier grade. Browsers only start
-   audio after a tap, so the context is woken on the first touch and the clicks play from then on. */
-let clickCtx = null;
-function audioReady() {
-  try {
-    if (!clickCtx) clickCtx = new (window.AudioContext || window.webkitAudioContext)();
-    if (clickCtx.state === "suspended") clickCtx.resume();
-  } catch { clickCtx = null; }
-  return clickCtx;
-}
-function clickSound(g) {
-  const ctx = audioReady();
-  if (!ctx) return;
-  const t = ctx.currentTime, osc = ctx.createOscillator(), gain = ctx.createGain();
-  osc.type = "triangle";
-  osc.frequency.value = { 2: 520, 3: 820, 4: 1250 }[g] || 820;
-  gain.gain.setValueAtTime(0.3, t);
-  gain.gain.exponentialRampToValueAtTime(0.001, t + 0.045);
-  osc.connect(gain).connect(ctx.destination);
-  osc.start(t);
-  osc.stop(t + 0.05);
-}
-addEventListener("touchend", audioReady, { capture: true, passive: true });
 let strengthShown = null;
 function showStrength(dx) {
   const box = document.getElementById("strength");
@@ -2385,7 +2392,7 @@ function showStrength(dx) {
   if (g === strengthShown) return;
   const changed = strengthShown !== null;
   strengthShown = g;
-  tick(g);
+  tick();
   box.replaceChildren(
     el("div", { class: "what" }, el("span", { class: "name g" + g + (changed ? " pop" : "") }, GRADES[g]), el("span", { class: "next" }, next)),
     el("div", { class: "meter g" + g }, [3, 4].map(n => el("span", { class: n <= g ? "on" : "" }))),
