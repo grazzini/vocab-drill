@@ -77,6 +77,14 @@ body.zen #hair { opacity: .55; }
   padding: 10px 18px; background: var(--bg); border-radius: 8px;
 }
 #strength[hidden] { display: none; }
+@keyframes pop { from { transform: scale(1.25); } to { transform: scale(1); } }
+#strength .name.pop { animation: pop .18s ease-out; display: inline-block; }
+/* The last grade, by the count; going back (or a tap) takes it back to change it. */
+#graded { color: var(--dim); margin-right: 14px; font-variant-numeric: lining-nums; }
+#graded[hidden] { display: none; }
+#graded .g1 { color: var(--accent); }
+#graded .g4 { color: var(--good); }
+.haptic { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
 #strength .what { display: flex; align-items: baseline; gap: 10px; }
 #strength .name { font-size: 1.8rem; }
 #strength .name.g4 { color: var(--good); }
@@ -335,10 +343,11 @@ rt { -webkit-user-select: none; user-select: none; }   /* selecting a sentence f
 <body>
 <header>
   <span id="label"></span>
-  <span><span id="skipped"></span><a id="count" href="#week" title="This week's list"></a></span>
+  <span><button id="graded" title="Change this grade (swipe right, ← or u)" hidden></button><span id="skipped"></span><a id="count" href="#week" title="This week's list"></a></span>
   <div id="hair" aria-hidden="true"></div>
 </header>
 <div id="strength" hidden></div>
+<label class="haptic" aria-hidden="true"><input type="checkbox" switch tabindex="-1"></label>
 <div id="app"></div>
 <footer>
   <button id="listenBtn">listen</button>
@@ -641,8 +650,10 @@ function enrollPast() {
   if (seeded) { S.revlog.sort((a, b) => a[0] - b[0]); memo = null; rwkvReplay(); }
 }
 /* Cards known only from seed answers are the backlog from before the log: at most this many a day. */
-const BACKLOG_PER_DAY = 20;
-function dueToday() {
+const backlogPerDay = () => S.backlogPerDay || 40;
+const MORE = 20;   /* what "more" pulls in at once */
+/* Cards due today, one per word: [ordinary, backlog], each least likely to be remembered first. */
+function dueCards() {
   const today = currentDay(), now = nowSeconds(), out = [], backlog = [], cards = memory().cards;
   for (const id of Object.keys(S.srs)) {
     if (!BY_ID.has(id) || (S.week && S.week.ids.includes(id))) continue;   /* a restarted week's words review as stages */
@@ -653,9 +664,26 @@ function dueToday() {
     if (!due.length) continue;
     (cards.get(due[0][0]).history.every(h => h[3]) ? backlog : out).push(due[0]);
   }
-  backlog.sort((a, b) => a[1] - b[1]);
-  return out.concat(backlog.slice(0, BACKLOG_PER_DAY))
-    .sort((a, b) => a[1] - b[1]).map(([key]) => key);   /* least likely to be remembered first */
+  const byRecall = (a, b) => a[1] - b[1];
+  return [out.sort(byRecall), backlog.sort(byRecall)];
+}
+function dueToday() {
+  const [out, backlog] = dueCards();
+  return out.concat(backlog.slice(0, backlogPerDay())).sort((a, b) => a[1] - b[1]).map(([key]) => key);
+}
+/* Backlog cards not in today's queue yet. */
+function backlogWaiting() {
+  const d = S.srsDay, queued = new Set(d ? d.queue.concat(d.missed, d.cleared).map(k => splitKey(k).id) : []);
+  return dueCards()[1].map(([key]) => key).filter(key => !queued.has(splitKey(key).id));
+}
+/* Pull more of the backlog into today. */
+function reviewMore(n = MORE) {
+  const more = backlogWaiting().slice(0, n);
+  if (!more.length || !S.srsDay) return;
+  S.srsDay.queue.push(...more);
+  S.srsDay.total += more.length;
+  save();
+  render();
 }
 
 /* ---------- helpers ---------- */
@@ -1344,8 +1372,13 @@ function itemStage(d, item) {
   const { card } = splitKey(item);
   return card === null ? d.stage : card === PRODUCTION ? 5 : 3;
 }
+/* The last grade, so it can be taken back: what it changed, as it was before. */
+let lastGrade = null;
 function grade(w, rating) {
-  const d = session(), item = d.queue.shift(), correct = rating > 1;
+  const before = session(), today = currentDay();
+  lastGrade = { w, rating, mode: sessionMode, session: structuredClone(before), result: S.results[w.id] ? { ...S.results[w.id] } : null,
+    revlog: S.revlog.length, logged: S.log[today] || 0, today, history: S.history.length, last: S.last };
+  const d = before, item = d.queue.shift(), correct = rating > 1;
   (correct ? d.cleared : d.missed).push(item);
   if (!correct && d.slipped && !d.slipped.includes(w.id)) d.slipped.push(w.id);
   logAnswer(w.id, STAGES[itemStage(d, item)].kind === "id" ? RECOGNITION : PRODUCTION, rating);
@@ -1363,7 +1396,37 @@ function grade(w, rating) {
   if (!d.queue.length && d === S.day) S.last = { done: d.cleared.length, total: d.cleared.length };
   save();
   render();
+  const { card } = splitKey(item), key = cardKey(w.id, card !== null ? card : S.revlog[S.revlog.length - 1][2]);
+  const due = card !== null && rating > 1 && dueDayOf(key), n = due && daysBetween(currentDay(), due);
+  showGraded(rating, n ? n + " d" : "");
 }
+function undoGrade() {
+  const g = lastGrade;
+  if (!g) return;
+  lastGrade = null;
+  hideGraded();
+  S[g.mode === "practice" ? "practice" : g.mode === "srs" ? "srsDay" : "day"] = g.session;
+  if (g.result) S.results[g.w.id] = g.result; else delete S.results[g.w.id];
+  S.revlog.length = g.revlog;
+  S.log[g.today] = g.logged;
+  S.history.length = g.history;
+  S.last = g.last;
+  memo = null;
+  rwkvReplay();
+  save();
+  render();
+}
+function showGraded(rating, detail) {
+  const box = document.getElementById("graded");
+  box.replaceChildren(el("span", { class: "g" + rating }, GRADES[rating]), detail ? " · " + detail : "");
+  box.ariaLabel = "Graded " + GRADES[rating] + (detail ? ", next in " + detail.replace(" d", " days") : "") + ". Go back to change it.";
+  box.hidden = false;
+}
+function hideGraded() {
+  document.getElementById("graded").hidden = true;
+}
+/* Back: to the card just graded, to grade it again; with nothing to take back, into the history. */
+const goBack = () => lastGrade ? undoGrade() : stepHistory(-1);
 function prefetch(stage) {
   if (!stage.context) return;
   session().queue.slice(0, 2).map(item => splitKey(item).id).forEach(id => {
@@ -1399,7 +1462,7 @@ function renderRecognition(w, stage, note, key) {
      With the answer up, Got it and Missed stay on screen in zen too: Missed has no swipe. */
   /* A left swipe grades by how far it goes: Hard, Good (the usual flick) or Easy. Missed stays a button. */
   const strength = dx => { const f = -dx / innerWidth; return f < 0.25 ? 2 : f < 0.55 ? 3 : 4; };
-  const gestures = touch = { left: dx => grade(w, dx ? strength(dx) : 3), right: () => stepHistory(-1), down: () => reveal(), up: () => conceal(), tap: speak,
+  const gestures = touch = { left: dx => grade(w, dx ? strength(dx) : 3), right: goBack, down: () => reveal(), up: () => conceal(), tap: speak,
     strength: dx => { const g = strength(dx), n = key && nextInterval(key, g); return { g, next: n ? "next in " + inDays(n) : "" }; } };
   /* Hard · easy sit under Got it; on the front the row is kept empty so nothing moves. */
   const extra = () => [el("span"), el("div", { class: "grades" },
@@ -1544,10 +1607,14 @@ function renderType(w, note) {
 
 /* ---------- done ---------- */
 function renderDone() {
+  const waiting = S.week.ready ? backlogWaiting().length : 0;
   app.append(card([
     el("div", { class: "hero", lang: "ja" }, "お疲れ様"),
-    el("div", { class: "done-en" }, "All done")]));
-  touch = { right: () => stepHistory(-1), down: () => stepHistory(-1) };
+    el("div", { class: "done-en" }, "All done" + (waiting ? " · " + waiting + " older words still waiting" : ""))],
+    null,
+    waiting ? el("div", { class: "actions" }, stay(action(Math.min(MORE, waiting) + " more", "n", () => reviewMore()))) : null));
+  keys = e => { if (e.key === "n" && waiting) reviewMore(); else return false; };
+  touch = { right: goBack, down: () => stepHistory(-1) };
 }
 
 /* ---------- week list ---------- */
@@ -1981,12 +2048,11 @@ function renderMemory() {
     }
   }
   if (S.srsDay && S.srsDay.date === today) counts[0] = S.srsDay.queue.length + S.srsDay.missed.length;   /* what's left today */
-  /* The backlog not in today's queue arrives BACKLOG_PER_DAY a day. */
-  const queued = new Set(S.srsDay ? S.srsDay.queue.concat(S.srsDay.missed, S.srsDay.cleared).map(k => splitKey(k).id) : []);
-  let waiting = Object.keys(S.srs).filter(id => BY_ID.has(id) && !queued.has(id) && !S.week.ids.includes(id)
-    && [RECOGNITION, PRODUCTION].some(card => { const key = cardKey(id, card), m = memory().cards.get(key), day = dueDayOf(key);
-      return m && m.history.every(h => h[3]) && day && day <= today; })).length;
-  for (let i = 1; i < 7 && waiting > 0; i++) { const n = Math.min(BACKLOG_PER_DAY, waiting); counts[i] += n; waiting -= n; }
+  /* The backlog not in today's queue arrives backlogPerDay() a day. */
+  const backlog = backlogWaiting().length;
+  let waiting = backlog;
+  for (let i = 1; i < 7 && waiting > 0; i++) { const n = Math.min(backlogPerDay(), waiting); counts[i] += n; waiting -= n; }
+  const setBacklog = by => { S.backlogPerDay = Math.min(200, Math.max(10, backlogPerDay() + by)); save(); render(); };
   const top = Math.max(1, ...counts);
   const names = counts.map((_, i) => i ? new Date(addDays(today, i) + "T12:00").toLocaleDateString("en-US", { weekday: "short" }) : "today");
   const scores = scoreModels(), worst = Math.max(0.01, ...Object.values(scores).map(x => x.loss));
@@ -2003,7 +2069,14 @@ function renderMemory() {
     el("section", null, el("h2", null, "Coming up"),
       el("div", { class: "bars", role: "img", ariaLabel: "Reviews due over the next 7 days: " + counts.join(", ") },
         counts.map(n => el("div", null, String(n), el("i", { style: "height: " + (n / top * 84).toFixed(0) + "px" })))),
-      el("div", { class: "days" }, names.map(n => el("span", null, n)))),
+      el("div", { class: "days" }, names.map(n => el("span", null, n))),
+      el("div", { class: "setting" }, el("span", null, "Older words a day"),
+        el("span", { class: "step" },
+          el("button", { ariaLabel: "Fewer older words a day", onclick: () => setBacklog(-10) }, "−"),
+          el("span", null, String(backlogPerDay())),
+          el("button", { ariaLabel: "More older words a day", onclick: () => setBacklog(10) }, "+"))),
+      backlog ? el("div", { class: "setting" }, el("span", { class: "sub" }, backlog + " older words waiting"),
+        el("button", { class: "act", onclick: () => reviewMore() }, "Add " + Math.min(MORE, backlog) + " to today")) : null),
     el("section", null, el("h2", null, "How well it predicts you"),
       shown ? el("div", null, "Predicted " + Math.round(100 * shown.predicted) + "% · you got " + Math.round(100 * shown.actual) + "%")
         : el("div", { class: "sub" }, "Not enough answers yet."),
@@ -2266,12 +2339,23 @@ const SWIPE_MIN = 50, SWIPE_MS = 700, EDGE = 24;
 let lastPointer = "mouse", swipe = null;
 addEventListener("pointerdown", e => { lastPointer = e.pointerType; }, { capture: true, passive: true });
 const swipeCard = () => app.querySelector("main");
+/* A tick each time a swipe crosses into another grade: vibrate where there is one (Android);
+   on iOS 18+ toggling a hidden switch control gives the system's haptic. */
+function tick() {
+  if (navigator.vibrate) navigator.vibrate(12);
+  else document.querySelector(".haptic").click();
+}
+let strengthShown = null;
 function showStrength(dx) {
   const box = document.getElementById("strength");
-  if (dx === null || !touch || !touch.strength || dx > -SWIPE_MIN) { box.hidden = true; return; }
+  if (dx === null || !touch || !touch.strength || dx > -SWIPE_MIN) { box.hidden = true; strengthShown = null; return; }
   const { g, next } = touch.strength(dx);
+  if (g === strengthShown) return;
+  const changed = strengthShown !== null;
+  strengthShown = g;
+  tick();
   box.replaceChildren(
-    el("div", { class: "what" }, el("span", { class: "name g" + g }, GRADES[g]), el("span", { class: "next" }, next)),
+    el("div", { class: "what" }, el("span", { class: "name g" + g + (changed ? " pop" : "") }, GRADES[g]), el("span", { class: "next" }, next)),
     el("div", { class: "meter g" + g }, [2, 3, 4].map(n => el("span", { class: n <= g ? "on" : "" }))),
     el("div", { class: "names" }, el("span", null, "hard"), el("span", null, "good"), el("span", null, "easy")));
   box.hidden = false;
@@ -2514,6 +2598,7 @@ function paintChrome() {
 const openListen = () => { location.hash = "#listen"; };
 document.getElementById("listenBtn").addEventListener("click", openListen);
 document.getElementById("practiceBtn").addEventListener("click", () => openPractice());
+document.getElementById("graded").addEventListener("click", undoGrade);
 document.getElementById("strokeBtn").addEventListener("click", toggleStrokes);
 document.getElementById("voiceBtn").addEventListener("click", toggleVoice);
 document.getElementById("speakerBtn").addEventListener("click", cycleSpeaker);
@@ -2542,7 +2627,7 @@ document.addEventListener("keydown", e => {
   if ((e.key === "ArrowLeft" || e.key === "ArrowRight") && !location.hash
       && (!typing || e.target.readOnly || !e.target.value)) {
     e.preventDefault();
-    return stepHistory(e.key === "ArrowLeft" ? -1 : 1);
+    return e.key === "ArrowLeft" && peek === null ? goBack() : stepHistory(e.key === "ArrowLeft" ? -1 : 1);
   }
   if (typing && !e.target.readOnly) return;
   if (e.key === "l" && lookup) window.open(wordUrl(lookup), "_blank", "noopener");
@@ -2558,13 +2643,14 @@ document.addEventListener("keydown", e => {
   else if (e.key === "a") openListen();
   else if (e.key === "p") openPractice();
   else if (e.key === "m") location.hash = "#memory";
+  else if (e.key === "u" && lastGrade && (!location.hash || location.hash === "#practice")) undoGrade();
   else if (e.key === "v") cycleSpeaker();
   else if (e.key === "-") setSpeed(speechSpeed() - 0.1);
   else if (e.key === "=" || e.key === "+") setSpeed(speechSpeed() + 0.1);
   else if (e.key === "y") syncNow();
   else if (e.key === "Y") setupSync();
 });
-addEventListener("hashchange", () => { viewedWeek = null; listening = null; render(); });
+addEventListener("hashchange", () => { viewedWeek = null; listening = null; lastGrade = null; hideGraded(); render(); });
 document.addEventListener("visibilitychange", () => {
   if (syncCfg && (document.visibilityState === "visible" || isDirty())) syncNow();   /* pull on return, push on leave */
   if (document.visibilityState !== "visible" || location.hash) return;
