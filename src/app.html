@@ -91,16 +91,17 @@ header:has(#graded:not([hidden])) #label { display: none; }   /* the last grade 
 #strength .name { font-size: 1.8rem; }
 #strength .name.g4 { color: var(--good); }
 #strength .next { color: var(--dim); font-variant-numeric: lining-nums; }
-#strength .meter { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; width: 240px; }
+#strength .meter { display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; width: 200px; }
 #strength .meter span { height: 3px; background: var(--line); }
 #strength .meter span.on { background: var(--ink); }
 #strength .meter.g4 span.on { background: var(--good); }
-#strength .names { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; width: 240px; text-align: center; color: var(--dim); font-size: .85rem; }
+#strength .names { display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; width: 200px; text-align: center; color: var(--dim); font-size: .85rem; }
 /* Recognition cards keep a second row under Got it for hard · easy, so revealing moves nothing. */
 main.rec { --ctl: 5.6rem; }
 .grades { display: flex; align-items: center; gap: 2px; color: var(--dim); font-size: .9rem; }
 .grades .act { border-bottom: 0; padding: 4px 8px; }
 .grades .act kbd { margin-left: 4px; }
+body.zen .grades .easy, body.zen .grades .dot { display: none; }   /* zen swipes Easy; Hard stays a button */
 /* Memory: a word's recall over time, and the stats page. */
 .mem { margin-top: 14px; }
 .mem .now { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
@@ -1463,13 +1464,17 @@ function renderRecognition(w, stage, note, key) {
   /* Swipes turn pages, as in listening: finger left is got it (next), finger right goes back a card.
      Down shows the answer, up hides it again. A tap repeats.
      With the answer up, Got it and Missed stay on screen in zen too: Missed has no swipe. */
-  /* A left swipe grades by how far it goes: Hard, Good (the usual flick) or Easy. Missed stays a button. */
-  const strength = dx => { const f = -dx / innerWidth; return f < 0.25 ? 2 : f < 0.55 ? 3 : 4; };
+  /* A left swipe grades by how far it goes: short is Good, long is Easy (30% of the width, but never
+     more than 160px, so it's no reach on a tablet). Missed and Hard stay buttons. */
+  const EASY_AT = Math.min(160, innerWidth * 0.3);
+  const strength = dx => -dx < EASY_AT ? 3 : 4;
   const gestures = touch = { left: dx => grade(w, dx ? strength(dx) : 3), right: goBack, down: () => reveal(), up: () => conceal(), tap: speak,
     strength: dx => { const g = strength(dx), n = key && nextInterval(key, g); return { g, next: n ? "next in " + inDays(n) : "" }; } };
   /* Hard · easy sit under Got it; on the front the row is kept empty so nothing moves. */
-  const extra = () => [el("span"), el("div", { class: "grades" },
-    action("hard", "2", () => grade(w, 2)), "·", action("easy", "4", () => grade(w, 4))), el("span")];
+  const easy = action("easy", "4", () => grade(w, 4));
+  easy.classList.add("easy");
+  const extra = () => [el("span"), stay(el("div", { class: "grades" },
+    action("hard", "2", () => grade(w, 2)), el("span", { class: "dot" }, "·"), easy)), el("span")];
   const showFront = () => {
     buttons.replaceChildren(action("Show", " ", reveal, "space"), action("Got it", "j", () => grade(w, 3)), el("span"));
     if (aux) { info.before(aux); gestures.word = cheat; }   /* tapping the key word peeks at its furigana */
@@ -2383,8 +2388,8 @@ function showStrength(dx) {
   tick(g);
   box.replaceChildren(
     el("div", { class: "what" }, el("span", { class: "name g" + g + (changed ? " pop" : "") }, GRADES[g]), el("span", { class: "next" }, next)),
-    el("div", { class: "meter g" + g }, [2, 3, 4].map(n => el("span", { class: n <= g ? "on" : "" }))),
-    el("div", { class: "names" }, el("span", null, "hard"), el("span", null, "good"), el("span", null, "easy")));
+    el("div", { class: "meter g" + g }, [3, 4].map(n => el("span", { class: n <= g ? "on" : "" }))),
+    el("div", { class: "names" }, el("span", null, "good"), el("span", null, "easy")));
   box.hidden = false;
 }
 function dropSwipe(settle) {
