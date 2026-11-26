@@ -80,7 +80,9 @@ body.zen #hair { opacity: .55; }
 @keyframes pop { from { transform: scale(1.25); } to { transform: scale(1); } }
 #strength .name.pop { animation: pop .18s ease-out; display: inline-block; }
 /* The last grade, by the count; going back (or a tap) takes it back to change it. */
-#graded { color: var(--dim); margin-right: 14px; font-variant-numeric: lining-nums; }
+#graded { color: var(--dim); font-variant-numeric: lining-nums; text-align: left; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: calc(100vw - 140px); }
+#graded .w { color: var(--ink); font-family: var(--ja); }
+header:has(#graded:not([hidden])) #label { display: none; }   /* the last grade stands in for the label */
 #graded[hidden] { display: none; }
 #graded .g1 { color: var(--accent); }
 #graded .g4 { color: var(--good); }
@@ -342,8 +344,8 @@ rt { -webkit-user-select: none; user-select: none; }   /* selecting a sentence f
 </head>
 <body>
 <header>
-  <span id="label"></span>
-  <span><button id="graded" title="Change this grade (swipe right, ← or u)" hidden></button><span id="skipped"></span><a id="count" href="#week" title="This week's list"></a></span>
+  <span><span id="label"></span><button id="graded" title="Change this grade (swipe right, ← or u)" hidden></button></span>
+  <span><span id="skipped"></span><a id="count" href="#week" title="This week's list"></a></span>
   <div id="hair" aria-hidden="true"></div>
 </header>
 <div id="strength" hidden></div>
@@ -362,7 +364,7 @@ rt { -webkit-user-select: none; user-select: none; }   /* selecting a sentence f
   <button id="speedBtnTts" title="Speech speed (- slower, = faster, click to reset)"></button>
   <button id="askBtn" class="touchOnly" title="Explain the selection or sentence (Google AI Mode)">explain</button>
   <button id="syncBtn" title="Sync to GitHub (y; Y for settings)">sync</button>
-  <span id="build" title="Build of this page">6833b5b</span>
+  <span id="build" title="Build of this page">2171fbe</span>
 </footer>
 <div id="explain" hidden></div>
 
@@ -1398,7 +1400,7 @@ function grade(w, rating) {
   render();
   const { card } = splitKey(item), key = cardKey(w.id, card !== null ? card : S.revlog[S.revlog.length - 1][2]);
   const due = card !== null && rating > 1 && dueDayOf(key), n = due && daysBetween(currentDay(), due);
-  showGraded(rating, n ? n + " d" : "");
+  showGraded(w, rating, n ? n + " d" : "");
 }
 function undoGrade() {
   const g = lastGrade;
@@ -1416,10 +1418,11 @@ function undoGrade() {
   save();
   render();
 }
-function showGraded(rating, detail) {
+function showGraded(w, rating, detail) {
   const box = document.getElementById("graded");
-  box.replaceChildren(el("span", { class: "g" + rating }, GRADES[rating]), detail ? " · " + detail : "");
-  box.ariaLabel = "Graded " + GRADES[rating] + (detail ? ", next in " + detail.replace(" d", " days") : "") + ". Go back to change it.";
+  box.replaceChildren(el("span", { class: "w", lang: "ja" }, w.word), w.kana !== w.word ? el("span", { lang: "ja" }, " (" + w.kana + ")") : "", " ",
+    el("span", { class: "g" + rating }, GRADES[rating]), detail ? " · " + detail : "");
+  box.ariaLabel = w.word + " graded " + GRADES[rating] + (detail ? ", next in " + detail.replace(" d", " days") : "") + ". Go back to change it.";
   box.hidden = false;
 }
 function hideGraded() {
@@ -2342,7 +2345,7 @@ const swipeCard = () => app.querySelector("main");
 /* A tick each time a swipe crosses into another grade: vibrate where there is one (Android);
    on iOS 18+ toggling a hidden switch control gives the system's haptic. */
 function tick() {
-  if (navigator.vibrate) navigator.vibrate(12);
+  if (navigator.vibrate) navigator.vibrate(100);
   else document.querySelector(".haptic").click();
 }
 let strengthShown = null;
