@@ -141,7 +141,24 @@ svg.acjk path[clip-path] {
 .weeknav button { color: var(--dim); padding: 0 6px; }
 .weeknav button:hover:not(:disabled) { color: var(--ink); }
 .weeknav button:disabled { opacity: .3; cursor: default; }
-.weeknav .over { margin-left: auto; margin-right: 12px; font-size: .95rem; }
+.weeknav { flex-wrap: wrap; }
+.weeknav .over, .weeknav .prac { margin-left: auto; margin-right: 12px; font-size: .95rem; }
+.weeknav .prac + .over { margin-left: 0; }
+dialog.practice {
+  width: min(440px, calc(100vw - 32px)); padding: 20px 24px 18px; border: 1px solid var(--line); border-radius: 10px;
+  background: var(--bg); color: var(--ink); font-size: 1.05rem;
+}
+dialog.practice::backdrop { background: rgb(0 0 0 / .35); }
+dialog.practice h2 { font: 400 1.5rem var(--en); margin: 0 0 12px; }
+dialog.practice fieldset { border: 0; margin: 0 0 12px; padding: 0; min-width: 0; }
+dialog.practice legend { color: var(--dim); font-size: .9rem; padding: 0; margin-bottom: 4px; }
+dialog.practice .pick { display: flex; align-items: center; gap: 8px; padding: 5px 0; flex-wrap: wrap; }
+dialog.practice .pick.sub { padding-left: 26px; color: var(--dim); font-size: .95rem; }
+dialog.practice input { accent-color: var(--accent); margin: 0; }
+dialog.practice select { font: inherit; color: var(--ink); background: var(--tint); border: 1px solid var(--line); border-radius: 4px; padding: 3px 6px; max-width: 100%; }
+dialog.practice .count { color: var(--dim); margin: 2px 0 14px; }
+dialog.practice .buttons { display: flex; justify-content: flex-end; gap: 22px; flex-wrap: wrap; }
+dialog.practice .act:disabled { opacity: .35; cursor: default; }
 .credit { color: var(--dim); font-size: .85rem; margin-top: 28px; }
 #strokeBtn.on, #voiceBtn.on { color: var(--ink); }
 mark { background: none; color: var(--accent); }
@@ -257,6 +274,7 @@ rt { -webkit-user-select: none; user-select: none; }   /* selecting a sentence f
 <div id="app"></div>
 <footer>
   <button id="listenBtn">listen</button>
+  <button id="practiceBtn" title="Practice missed words or any week, in any format (p)">practice</button>
   <button id="zenBtn">zen</button>
   <button id="themeBtn">theme</button>
   <button id="strokeBtn">strokes</button>
@@ -267,7 +285,7 @@ rt { -webkit-user-select: none; user-select: none; }   /* selecting a sentence f
   <button id="speedBtnTts" title="Speech speed (- slower, = faster, click to reset)"></button>
   <button id="askBtn" class="touchOnly" title="Explain the selection or sentence (Google AI Mode)">explain</button>
   <button id="syncBtn" title="Sync to GitHub (y; Y for settings)">sync</button>
-  <span id="build" title="Build of this page">17dfbd6</span>
+  <span id="build" title="Build of this page">1efe77d</span>
 </footer>
 <div id="explain" hidden></div>
 
@@ -298,7 +316,7 @@ function loadState() {
   try { return JSON.parse(localStorage.getItem(STORE_KEY)) || {}; }
   catch { return {}; }
 }
-const DEFAULTS = { status: {}, results: {}, week: null, day: null, last: null, plain: false, theme: null, strokes: false, strokeSpeed: "quick", font: "animation", history: [], voice: false, log: {}, weeks: [] };
+const DEFAULTS = { status: {}, results: {}, week: null, day: null, last: null, plain: false, theme: null, strokes: false, strokeSpeed: "quick", font: "animation", history: [], voice: false, log: {}, weeks: [], practice: null, practiceOpts: null };
 const S = Object.assign(structuredClone(DEFAULTS), loadState());
 /* Older saves kept only the previous week's words, without its date. */
 if (S.prev && S.prev.length && !S.weeks.length && S.week) {
@@ -344,6 +362,19 @@ function currentDay() {
 }
 function daysBetween(from, to) {
   return Math.round((new Date(to + "T12:00") - new Date(from + "T12:00")) / 864e5);
+}
+/* Misses from before missedOn was kept: dated by their week, at the latest day it could have reviewed them. */
+if (!S.missBackfilled) {
+  const when = new Map(), today = currentDay();
+  const addDays = (day, n) => { const d = new Date(day + "T12:00"); d.setDate(d.getDate() + n); return iso(d); };
+  for (const w of S.weeks) for (const id of w.ids) when.set(id, addDays(w.start, STAGES.length));
+  if (S.week) for (const id of S.week.ids) when.set(id, S.day ? S.day.date : S.week.start);
+  for (const [id, r] of Object.entries(S.results)) {
+    if (r.missedOn || r.passed >= r.total) continue;
+    const day = when.get(id) || today;
+    r.missedOn = day > today ? today : day;
+  }
+  S.missBackfilled = true;
 }
 
 /* ---------- helpers ---------- */
@@ -837,8 +868,9 @@ function render() {
   strokeRun = null;
   document.body.classList.toggle("zen", !S.plain);
   applyTheme();
-  const wantList = location.hash === "#week", wantListen = location.hash === "#listen";
-  document.body.classList.toggle("listing", wantList || wantListen);
+  document.getElementById("label").title = "";
+  const wantList = location.hash === "#week", wantListen = location.hash === "#listen", wantPractice = location.hash === "#practice";
+  document.body.classList.toggle("listing", wantList || wantListen || wantPractice);
   document.body.classList.toggle("weekList", wantList);
   const mode = mainMode();
   updateCount(mode);
@@ -846,6 +878,7 @@ function render() {
   if (wantList) return renderWeek();
   if (wantListen) renderListen();
   else if (peek !== null) renderPeek();
+  else if (wantPractice) renderPractice();
   else if (mode === "diag") renderDiag();
   else if (mode === "review") renderCard();
   else renderDone();
@@ -855,6 +888,13 @@ function updateCount(mode) {
   const count = document.getElementById("count");
   const label = document.getElementById("label");
   let done, total, past = false;
+  if (inPractice()) {
+    const p = S.practice;
+    count.textContent = p.stage === null ? "" : p.cleared.length + "/" + p.ids.length;   /* listening isn't scored */
+    count.classList.remove("past");
+    document.getElementById("skipped").textContent = label.textContent = "";
+    return;
+  }
   const today = S.day && S.day.date === currentDay() ? S.day : null;
   if (mode === "diag") { done = S.week.ids.length; total = WEEK_SIZE; }
   else if (today) { done = today.cleared.length; total = S.week.ids.length; }   /* 0/100 from the start, not the last session's score */
@@ -991,32 +1031,37 @@ function action(text, key, handler, keyName) {
 }
 
 /* ---------- daily review ---------- */
+/* The daily review, or a practice session: same cards, same scoring. */
+const inPractice = () => location.hash === "#practice" && !!S.practice;
+const session = () => inPractice() ? S.practice : S.day;
 function grade(w, correct) {
-  const d = S.day;
+  const d = session();
   d.queue.shift();
   (correct ? d.cleared : d.missed).push(w.id);
+  if (!correct && d.slipped && !d.slipped.includes(w.id)) d.slipped.push(w.id);
   const result = S.results[w.id] || (S.results[w.id] = { passed: 0, total: 0, last: false });
   result.passed += correct ? 1 : 0;
   result.total++;
   result.last = correct;
+  if (!correct) result.missedOn = currentDay();
   remember(w.id);
   if (!d.queue.length && d.missed.length) {
     d.queue = shuffle(d.missed);
     d.missed = [];
     d.round++;
   }
-  if (!d.queue.length) S.last = { done: d.cleared.length, total: d.cleared.length };
+  if (!d.queue.length && d === S.day) S.last = { done: d.cleared.length, total: d.cleared.length };
   save();
   render();
 }
 function prefetch(stage) {
   if (!stage.context) return;
-  S.day.queue.slice(0, 2).forEach(id => {
+  session().queue.slice(0, 2).forEach(id => {
     if (!sentences.has(id)) sentences.set(id, fetchSentences(BY_ID.get(id), 1).catch(() => []));
   });
 }
 function renderCard() {
-  const d = S.day, stage = STAGES[d.stage], w = BY_ID.get(d.queue[0]);
+  const d = session(), stage = STAGES[d.stage], w = BY_ID.get(d.queue[0]);
   if (!w) { d.queue.shift(); save(); return render(); }
   prefetch(stage);
   if (!stage.context) warmStrokes(BY_ID.get(d.queue[1]));
@@ -1310,6 +1355,8 @@ function renderWeek() {
       el("button", { ariaLabel: "Previous week", disabled: index <= 0, onclick: () => stepWeek(-1) }, "←"),
       el("h1", null, !week ? "No words yet" : week === S.week ? "This week" : "Week of " + shortDate(week.start)),
       el("button", { ariaLabel: "Next week", disabled: index >= weeks.length - 1, onclick: () => stepWeek(1) }, "→"),
+      week ? el("button", { class: "prac", title: "Practice these words in any format; the daily review is untouched",
+        onclick: () => openPractice({ source: "week", week: week.start }) }, "Practice") : null,
       week && week !== S.week
         ? el("button", { class: "over", title: "Review these words again, starting today", onclick: () => restartWeek(week) }, "Restart this week")
         : S.week.ids.length || S.week.skipped || S.week.ready
@@ -1380,7 +1427,7 @@ function renderWeek() {
   };
   list.append(el("p", { class: "credit" }, "Stroke order: AnimCJK (Arphic Public License). Sentences: Tatoeba (CC BY 2.0 FR). Translations: Google Translate. Words: JLPT lists via Jamie Sinclair."));
   app.append(list);
-  document.getElementById("label").replaceChildren(el("a", { href: "#", style: "text-decoration:none" }, "← Back"));
+  document.getElementById("label").replaceChildren(backLink("Back"));
   keys = e => {
     if (e.key === "Escape") location.hash = "";
     else if (e.key === "ArrowLeft") stepWeek(-1);
@@ -1401,23 +1448,29 @@ function renderWeek() {
 /* ---------- listening review ---------- */
 const LISTEN_SIZE = 10;
 let listening = null;   /* { cards, at }; at -1 is the intro, past the end is the finish */
-/* One sentence per word this week, going back for seconds only if the week is short. */
-function listenCards() {
-  const week = weekList().pop(), data = window.SENTENCES, seen = new Set();
-  if (!week || !data) return [];
-  return shuffle(week.ids)
+/* This week's words, or a listening practice's (all of them, not ten at a time). */
+function listenSource() {
+  if (inPractice()) return [S.practice.ids, S.practice.ids.length];
+  const week = weekList().pop();
+  return [week ? week.ids : [], LISTEN_SIZE];
+}
+/* One sentence per word, going back for seconds only if there are too few words. */
+function listenCards([ids, size]) {
+  const data = window.SENTENCES, seen = new Set();
+  if (!ids.length || !data) return [];
+  return shuffle(ids)
     .flatMap(id => shuffle(data.w[id] || []).map((ref, pass) => ({ w: BY_ID.get(id), ref, pass })))
     .filter(card => card.w)
     .sort((a, b) => a.pass - b.pass)
     .filter(card => !seen.has(card.ref[0]) && seen.add(card.ref[0]))
-    .slice(0, LISTEN_SIZE)
+    .slice(0, size)
     .map(({ w, ref }) => {
       const s = sentenceFrom(ref);
       return { w, s, translated: googleTranslate(s) };
     });
 }
 function nextListen() {
-  if (listening.at >= listening.cards.length) listening = { cards: listenCards(), at: 0 };
+  if (listening.at >= listening.cards.length) listening = { cards: listenCards(listenSource()), at: 0 };
   else listening.at++;
   render();
 }
@@ -1427,12 +1480,13 @@ function prevListen() {
   render();
 }
 function renderListen() {
-  document.getElementById("label").replaceChildren(el("a", { href: "#", style: "text-decoration:none" }, "← Back"));
+  document.getElementById("label").replaceChildren(backLink(inPractice() ? "Practice · Listening" : "Back"));
   if (!listening) {
     app.append(card(el("div", { class: "empty" }, "Loading…")));
+    const hash = location.hash;
     sentencesReady.then(() => {
-      listening = { cards: listenCards(), at: -1 };
-      if (location.hash === "#listen") render();
+      listening = { cards: listenCards(listenSource()), at: -1 };
+      if (location.hash === hash) render();
     });
     return;
   }
@@ -1440,7 +1494,7 @@ function renderListen() {
   const leave = () => { location.hash = ""; };
   if (!cards.length) {
     keys = e => { if (e.key === "Escape") leave(); else return false; };
-    return app.append(card(el("div", { class: "empty" }, "No sentences for this week's words yet.")));
+    return app.append(card(el("div", { class: "empty" }, inPractice() ? "No sentences for these words yet." : "No sentences for this week's words yet.")));
   }
   if (at < 0 || at >= cards.length) {
     const finished = at >= 0;
@@ -1455,7 +1509,7 @@ function renderListen() {
     return app.append(card(
       el("div", { class: "hero", lang: "ja" }, finished ? "おわり" : "聞き取り"),
       el("div", { class: "answer note" }, finished
-        ? "→ for " + LISTEN_SIZE + " more · ← back · esc to leave"
+        ? (inPractice() ? "→ again" : "→ for " + LISTEN_SIZE + " more") + " · ← back · esc to leave"
         : cards.length + " sentences · → next · ← back · space or tap replays · ↓ text, then translation · ↑ hides"),
       el("div", { class: "actions hotkeys" }, action(finished ? "Again" : "Start", "→", nextListen))));
   }
@@ -1501,6 +1555,116 @@ function renderListen() {
   app.append(view);
   say(s.text);
   if (cards[at + 1]) aivis(cards[at + 1].s.text);   /* ready before → is pressed */
+}
+
+/* ---------- practice ---------- */
+/* Missed words or any week, in any format, alongside the daily review: answers count toward the
+   word's record and the heatmap, but S.day and the week are left alone. */
+const MISSED_WITHIN = [[1, "today"], [3, "in the last 3 days"], [7, "in the last week"], [14, "in the last 2 weeks"], [30, "in the last month"], [0, "ever"]];
+const FORMATS = STAGES.map((stage, i) => [String(i), stage.label]).concat([["listen", "Listening"]]);
+const backLink = text => el("a", { href: "#", style: "text-decoration:none" }, "← " + text);
+function practiceIds(o) {
+  if (o.source === "week") {
+    const week = weekList().find(w => w.start === o.week);
+    return week ? week.ids.filter(id => BY_ID.has(id)) : [];
+  }
+  const today = currentDay();
+  return Object.entries(S.results)
+    .filter(([id, r]) => BY_ID.has(id) && r.missedOn && (!o.days || daysBetween(r.missedOn, today) < o.days) && (!o.stillMissed || !r.last))
+    .map(([id]) => id);
+}
+function practiceTitle(o) {
+  if (o.source === "week") return o.week === S.week.start ? "This week" : "Week of " + shortDate(o.week);
+  return "Missed " + MISSED_WITHIN.find(([days]) => days === o.days)[1] + (o.stillMissed ? ", still missing" : "");
+}
+function startPractice(ids, format, title) {
+  S.practice = { ids, format, title, stage: format === "listen" ? null : +format,
+    queue: shuffle(ids), missed: [], cleared: [], round: 1, slipped: [] };
+  save();
+  listening = null;
+  peek = null;
+  if (location.hash === "#practice") render();
+  else location.hash = "#practice";
+}
+let practiceDialog = null;
+function openPractice(preset) {
+  if (practiceDialog) practiceDialog.remove();
+  const weeks = weekList().reverse();
+  const o = Object.assign({ source: "missed", days: 7, stillMissed: false, format: "3" }, S.practiceOpts, preset);
+  if (!weeks.some(w => w.start === o.week)) o.week = weeks.length ? weeks[0].start : "";
+  if (!weeks.length) o.source = "missed";
+  const select = (options, value) => {
+    const node = el("select", null, options.map(([v, text]) => el("option", { value: String(v) }, text)));
+    node.value = String(value);
+    return node;
+  };
+  const radios = {};
+  const radio = (value, text, control) => {
+    const input = radios[value] = el("input", { type: "radio", name: "source", value, checked: o.source === value });
+    control.addEventListener("change", () => { input.checked = true; });   /* picking a value picks its line */
+    return el("label", { class: "pick" }, input, text, control);
+  };
+  const days = select(MISSED_WITHIN, o.days);
+  const week = select(weeks.map(w => [w.start, (w === S.week ? "this week" : "the week of " + shortDate(w.start)) + " (" + w.ids.length + ")"]), o.week);
+  const still = el("input", { type: "checkbox", checked: o.stillMissed });
+  const format = select(FORMATS, o.format);
+  const count = el("p", { class: "count" });
+  const read = () => ({ source: radios.week && radios.week.checked ? "week" : "missed", days: +days.value, stillMissed: still.checked, week: week.value, format: format.value });
+  const close = () => dialog.close();
+  const start = el("button", { class: "act", type: "button", onclick: () => {
+    const opts = read(), ids = practiceIds(opts);
+    if (!ids.length) return;
+    S.practiceOpts = opts;
+    close();
+    startPractice(ids, opts.format, practiceTitle(opts));
+  } }, "Start");
+  const p = S.practice, left = p && p.stage !== null ? p.queue.length + p.missed.length : 0;
+  const form = el("form", { onsubmit: e => e.preventDefault() },
+    el("h2", null, "Practice"),
+    el("fieldset", null, el("legend", null, "Words"),
+      radio("missed", "Missed", days),
+      el("label", { class: "pick sub" }, still, "only those I got wrong last time"),
+      weeks.length ? radio("week", "From", week) : null),
+    el("fieldset", null, el("legend", null, "Format"), format),
+    count,
+    el("div", { class: "buttons" },
+      left ? el("button", { class: "act", type: "button", title: p.title + " · " + STAGES[p.stage].label,
+        onclick: () => { close(); location.hash = "#practice"; } }, "Resume (" + left + " left)") : null,
+      el("button", { class: "act", type: "button", onclick: close }, "Cancel"),
+      start));
+  const update = () => {
+    const n = practiceIds(read()).length;
+    count.textContent = n === 1 ? "1 word" : n + " words";
+    start.disabled = !n;
+  };
+  form.addEventListener("change", () => queueMicrotask(update));   /* after a select has picked its line */
+  still.addEventListener("change", () => { radios.missed.checked = true; });
+  const dialog = practiceDialog = el("dialog", { class: "practice" }, form);
+  dialog.addEventListener("close", () => { dialog.remove(); if (practiceDialog === dialog) practiceDialog = null; });
+  document.body.append(dialog);
+  update();
+  dialog.showModal();
+  start.focus();
+}
+function renderPractice() {
+  const p = S.practice;
+  if (!p) { location.hash = ""; return; }
+  if (p.stage === null) return renderListen();
+  document.getElementById("label").replaceChildren(backLink("Practice · " + STAGES[p.stage].label));
+  document.getElementById("label").title = p.title;
+  if (p.queue.length || p.missed.length) return renderCard();
+  const again = ids => startPractice(ids, p.format, p.title);
+  const n = p.ids.length, slipped = p.slipped.length;
+  app.append(card([
+    el("div", { class: "hero", lang: "ja" }, "練習終了"),
+    el("div", { class: "done-en" }, p.title + " · " + n + (n === 1 ? " word" : " words")
+      + (slipped ? " · " + slipped + " missed along the way" : " · none missed"))],
+    null,
+    el("div", { class: "actions" },
+      action("Again", "", () => again(p.ids)),
+      slipped ? action("Just the missed", "", () => again(p.slipped.slice())) : null,
+      action("Other practice", "p", () => openPractice()),
+      action("Back", "esc", () => { location.hash = ""; }))));
 }
 
 /* ---------- chrome ---------- */
@@ -1849,6 +2013,7 @@ function paintChrome() {
 }
 const openListen = () => { location.hash = "#listen"; };
 document.getElementById("listenBtn").addEventListener("click", openListen);
+document.getElementById("practiceBtn").addEventListener("click", () => openPractice());
 document.getElementById("strokeBtn").addEventListener("click", toggleStrokes);
 document.getElementById("voiceBtn").addEventListener("click", toggleVoice);
 document.getElementById("speakerBtn").addEventListener("click", cycleSpeaker);
@@ -1865,13 +2030,14 @@ document.addEventListener("keyup", e => { if (e.key === "Shift") holdShift(false
 addEventListener("blur", () => holdShift(false));
 document.addEventListener("keydown", e => {
   if (e.key === "Shift") holdShift(true);
-  if (e.metaKey || e.ctrlKey || e.altKey) return;
+  if (e.metaKey || e.ctrlKey || e.altKey || (practiceDialog && practiceDialog.open)) return;
   const typing = e.target.tagName === "INPUT";
   if (e.key === "Escape" && !document.getElementById("explain").hidden) { e.preventDefault(); return closeExplain(); }
   if ((e.key === "e" || e.key === "E") && (!typing || e.target.readOnly)) {
     e.preventDefault();
     return e.key === "e" ? explain() : explainGoogle();
   }
+  if (e.key === "Escape" && location.hash === "#practice") { e.preventDefault(); location.hash = ""; return; }
   if (keys && (!typing || e.target.readOnly) && keys(e) !== false) { e.preventDefault(); return; }
   if ((e.key === "ArrowLeft" || e.key === "ArrowRight") && !location.hash
       && (!typing || e.target.readOnly || !e.target.value)) {
@@ -1890,6 +2056,7 @@ document.addEventListener("keydown", e => {
   else if (e.key === "z") toggleZen();
   else if (e.key === "d") toggleTheme();
   else if (e.key === "a") openListen();
+  else if (e.key === "p") openPractice();
   else if (e.key === "v") cycleSpeaker();
   else if (e.key === "-") setSpeed(speechSpeed() - 0.1);
   else if (e.key === "=" || e.key === "+") setSpeed(speechSpeed() + 0.1);
