@@ -63,6 +63,72 @@ header {
 #count.past { color: var(--dim); }
 #skipped { color: var(--dim); margin-right: 14px; }
 #skipped:empty { display: none; }
+/* Progress for the day as one thin bar: this week's stage words, then reviews. */
+#hair { position: absolute; left: max(24px, env(safe-area-inset-left)); right: max(24px, env(safe-area-inset-right)); bottom: 8px; display: flex; gap: 3px; pointer-events: none; }
+#hair .seg { height: 2px; min-width: 6px; display: flex; background: var(--line); }
+#hair .seg > span { background: var(--ink); }
+#hair .seg.srs { background: color-mix(in srgb, var(--accent) 28%, var(--bg)); }
+#hair .seg.srs > span { background: var(--accent); }
+body.zen #hair { opacity: .55; }
+/* Swipe strength: while a left swipe is held, how far it has gone picks Hard, Good or Easy. */
+#strength {
+  position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(var(--footH, 64px) + var(--noteH) + var(--ctl) + 10px); z-index: 3;
+  display: flex; flex-direction: column; align-items: center; gap: 8px; pointer-events: none;
+  padding: 10px 18px; background: var(--bg); border-radius: 8px;
+}
+#strength[hidden] { display: none; }
+#strength .what { display: flex; align-items: baseline; gap: 10px; }
+#strength .name { font-size: 1.8rem; }
+#strength .name.g4 { color: var(--good); }
+#strength .next { color: var(--dim); font-variant-numeric: lining-nums; }
+#strength .meter { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; width: 240px; }
+#strength .meter span { height: 3px; background: var(--line); }
+#strength .meter span.on { background: var(--ink); }
+#strength .meter.g4 span.on { background: var(--good); }
+#strength .names { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; width: 240px; text-align: center; color: var(--dim); font-size: .85rem; }
+/* Recognition cards keep a second row under Got it for hard · easy, so revealing moves nothing. */
+main.rec { --ctl: 5.6rem; }
+.grades { display: flex; align-items: center; gap: 2px; color: var(--dim); font-size: .9rem; }
+.grades .act { border-bottom: 0; padding: 4px 8px; }
+.grades .act kbd { margin-left: 4px; }
+/* Memory: a word's recall over time, and the stats page. */
+.mem { margin-top: 14px; }
+.mem .now { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
+.mem .due { color: var(--accent); }
+.mem svg { display: block; width: 100%; max-width: 420px; height: auto; margin: 6px 0 4px; overflow: visible; }
+.mem .curve { fill: none; stroke: var(--ink); stroke-width: 1.5; }
+.mem .curve.ahead { stroke-dasharray: 3 3; }
+.mem .target { stroke: var(--dim); stroke-dasharray: 2 3; }
+.mem .nowline { stroke: var(--accent); }
+.mem .dot { fill: var(--ink); }
+.mem .dot.g1 { fill: var(--accent); }
+.mem .dot.seed { fill: none; stroke: var(--dim); }
+.mem svg text { fill: var(--dim); font-size: 11px; font-family: var(--en); }
+.mem .cards { color: var(--dim); font-size: .95rem; font-variant-numeric: lining-nums; }
+.memlink { display: block; margin: -14px 0 22px 12px; color: var(--dim); font-size: .95rem; text-decoration: none; }
+.memlink:hover { color: var(--ink); }
+.stats { width: min(560px, 100%); margin: 0 auto; padding: 84px 20px 88px; display: flex; flex-direction: column; gap: 30px; }
+.stats h2 { font: 400 1.5rem var(--en); margin: 0 0 10px; }
+.stats .sub { color: var(--dim); font-size: .95rem; }
+.bars { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 6px; align-items: end; height: 110px; }
+.bars div { display: flex; flex-direction: column; justify-content: flex-end; align-items: center; gap: 4px; height: 100%; font-size: .8rem; color: var(--dim); font-variant-numeric: lining-nums; }
+.bars i { display: block; width: 100%; min-height: 1px; background: var(--line); border-radius: 2px; }
+.bars div:first-child { color: var(--ink); }
+.bars div:first-child i { background: var(--accent); }
+.days { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 6px; text-align: center; color: var(--dim); font-size: .8rem; margin-top: 4px; }
+.days span:first-child { color: var(--accent); }
+.loss { display: grid; grid-template-columns: 5.5em minmax(0, 1fr) 6em; gap: 8px 10px; align-items: center; margin: 10px 0 6px; font-variant-numeric: lining-nums; }
+.loss .track { height: 6px; background: var(--tint); border-radius: 3px; }
+.loss .track i { display: block; height: 6px; border-radius: 3px; background: var(--ink); }
+.loss .n { color: var(--dim); font-size: .9rem; }
+.seg2 { display: grid; grid-template-columns: 1fr 1fr; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; margin-bottom: 10px; }
+.seg2 button { padding: 10px 0; text-align: center; }
+.seg2 button[aria-checked="true"] { background: var(--ink); color: var(--bg); }
+.seg2 button:disabled { opacity: .4; cursor: default; }
+.setting { display: flex; justify-content: space-between; align-items: center; gap: 12px; min-height: 44px; }
+.setting .step { display: flex; align-items: center; gap: 4px; font-variant-numeric: lining-nums tabular-nums; }
+.setting .step button { width: 40px; height: 40px; color: var(--dim); font-size: 1.2rem; }
+.setting .step button:hover { color: var(--ink); }
 footer {
   position: fixed; inset: auto 0 0 0; display: flex; justify-content: center; gap: 22px;
   padding: 16px 16px max(16px, env(safe-area-inset-bottom)); color: var(--dim); font-size: .95rem; transition: opacity .3s; flex-wrap: wrap;
@@ -270,7 +336,9 @@ rt { -webkit-user-select: none; user-select: none; }   /* selecting a sentence f
 <header>
   <span id="label"></span>
   <span><span id="skipped"></span><a id="count" href="#week" title="This week's list"></a></span>
+  <div id="hair" aria-hidden="true"></div>
 </header>
+<div id="strength" hidden></div>
 <div id="app"></div>
 <footer>
   <button id="listenBtn">listen</button>
@@ -316,7 +384,7 @@ function loadState() {
   try { return JSON.parse(localStorage.getItem(STORE_KEY)) || {}; }
   catch { return {}; }
 }
-const DEFAULTS = { status: {}, results: {}, week: null, day: null, last: null, plain: false, theme: null, strokes: false, strokeSpeed: "quick", font: "animation", history: [], voice: false, log: {}, weeks: [], practice: null, practiceOpts: null };
+const DEFAULTS = { status: {}, results: {}, week: null, day: null, last: null, plain: false, theme: null, strokes: false, strokeSpeed: "quick", font: "animation", history: [], voice: false, log: {}, weeks: [], practice: null, practiceOpts: null, revlog: [], srs: {}, srsDay: null, sched: "fsrs", target: 0.9 };
 const S = Object.assign(structuredClone(DEFAULTS), loadState());
 /* Older saves kept only the previous week's words, without its date. */
 if (S.prev && S.prev.length && !S.weeks.length && S.week) {
@@ -375,6 +443,219 @@ if (!S.missBackfilled) {
     r.missedOn = day > today ? today : day;
   }
   S.missBackfilled = true;
+}
+
+/* ---------- review log and memory ---------- */
+/* Every graded answer, oldest first: [unix seconds, word id, card, rating, ms, seed].
+   Card 0 is recognition, 1 production (two sibling cards of one word); rating 1 Again, 2 Hard, 3 Good, 4 Easy;
+   ms is how long the answer took. Seed entries (1 in the sixth place) only stand in for reviews from before
+   the log existed, so a past week's words can be scheduled; they are never shown to RWKV. */
+const RECOGNITION = 0, PRODUCTION = 1, GRADES = ["", "Again", "Hard", "Good", "Easy"];
+const cardKey = (id, card) => id + "#" + card;
+/* Queue items are word ids (the week's stages, practice) or card keys (reviews). */
+function splitKey(item) {
+  const at = item.lastIndexOf("#");
+  return at < 0 ? { id: item, card: null } : { id: item.slice(0, at), card: +item.slice(at + 1) };
+}
+const nowSeconds = () => Math.floor(Date.now() / 1000);
+function dayOfSeconds(t) {
+  const d = new Date(t * 1000);
+  d.setHours(d.getHours() - DAY_STARTS_AT);
+  return iso(d);
+}
+function addDays(day, n) {
+  const d = new Date(day + "T12:00");
+  d.setDate(d.getDate() + n);
+  return iso(d);
+}
+let shownAt = Date.now();   /* when the visible card appeared */
+function logAnswer(id, card, rating) {
+  const now = Date.now();
+  S.revlog.push([Math.floor(now / 1000), id, card, rating, Math.min(now - shownAt, 120000)]);
+  memo = null;
+  rwkvAppend(S.revlog.slice(-1));
+}
+
+/* FSRS-6 with its default parameters: the scheduler until RWKV is chosen, and RWKV's yardstick. */
+const fsrs = (() => {
+  const w = [0.212, 1.2931, 2.3065, 8.2956, 6.4133, 0.8334, 3.0194, 0.001, 1.8722, 0.1666, 0.796,
+    1.4835, 0.0614, 0.2629, 1.6483, 0.6014, 1.8729, 0.5425, 0.0912, 0.0658, 0.1542];
+  const decay = -w[20], factor = Math.pow(0.9, 1 / decay) - 1;
+  const clampD = d => Math.min(10, Math.max(1, d));
+  const d0 = g => clampD(w[4] - Math.exp(w[5] * (g - 1)) + 1);
+  const recall = (days, s) => Math.pow(1 + factor * Math.max(0, days) / s, decay);
+  const interval = (s, target) => s / factor * (Math.pow(target, 1 / decay) - 1);
+  /* The state after answering g, `days` after the last review; null for a card's first answer. */
+  function next(m, g, days) {
+    if (!m) return { s: w[g - 1], d: d0(g) };
+    let s;
+    if (days < 1) {   /* same day */
+      s = m.s * Math.exp(w[17] * (g - 3 + w[18])) * Math.pow(m.s, -w[19]);
+      if (g >= 3) s = Math.max(s, m.s);
+    } else {
+      const r = recall(days, m.s);
+      s = g === 1
+        ? Math.min(m.s, w[11] * Math.pow(m.d, -w[12]) * (Math.pow(m.s + 1, w[13]) - 1) * Math.exp(w[14] * (1 - r)))
+        : m.s * (1 + Math.exp(w[8]) * (11 - m.d) * Math.pow(m.s, -w[9]) * (Math.exp(w[10] * (1 - r)) - 1)
+          * (g === 2 ? w[15] : 1) * (g === 4 ? w[16] : 1));
+    }
+    const d = m.d - w[6] * (g - 3) * (10 - m.d) / 9;
+    return { s: Math.max(0.01, s), d: clampD(w[7] * d0(4) + (1 - w[7]) * d) };
+  }
+  return { next, recall, interval };
+})();
+
+/* Each card's memory, replayed from the log: { s, d, last, reps, lapses, history: [[t, rating, s, seed]] },
+   plus FSRS's prediction before every logged answer (for calibration). Rebuilt when the log changes. */
+let memo = null;
+function memory() {
+  if (memo) return memo;
+  const cards = new Map(), preds = [];
+  for (const [t, id, card, g, , seed] of S.revlog) {
+    const key = cardKey(id, card), m = cards.get(key);
+    const days = m ? (t - m.last) / 86400 : 0;
+    preds.push(m && !seed ? fsrs.recall(days, m.s) : null);
+    const next = fsrs.next(m, g, days);
+    const lapse = m && g === 1 && dayOfSeconds(t) !== dayOfSeconds(m.last) ? 1 : 0;
+    cards.set(key, { ...next, last: t, reps: (m ? m.reps : 0) + 1, lapses: (m ? m.lapses : 0) + lapse,
+      history: (m ? m.history : []).concat([[t, g, next.s, !!seed]]) });
+  }
+  return (memo = { cards, preds });
+}
+/* Recall now, and the day a card is due, from whichever scheduler is chosen. */
+function recallOf(key, at = nowSeconds()) {
+  const curve = S.sched === "rwkv" && rwkv.curves && rwkv.curves[key];
+  if (curve) return rwkvRecall(curve, at);
+  const m = memory().cards.get(key);
+  return m ? fsrs.recall((at - m.last) / 86400, m.s) : null;
+}
+function dueDayOf(key) {
+  const curve = S.sched === "rwkv" && rwkv.curves && rwkv.curves[key];
+  if (curve) {   /* at least the next day, as for any review */
+    const day = dayOfSeconds(rwkvDue(curve, S.target)), soonest = addDays(dayOfSeconds(curve.at), 1);
+    return day > soonest ? day : soonest;
+  }
+  const m = memory().cards.get(key);
+  if (!m) return null;
+  return addDays(dayOfSeconds(m.last), Math.max(1, Math.round(fsrs.interval(m.s, S.target))));
+}
+/* FSRS's next interval in days if the card were answered g now (shown while grading). */
+function nextInterval(key, g) {
+  const m = memory().cards.get(key);
+  if (!m) return null;
+  return Math.max(1, Math.round(fsrs.interval(fsrs.next(m, g, (nowSeconds() - m.last) / 86400).s, S.target)));
+}
+const inDays = n => n === 1 ? "1 day" : n + " days";
+
+/* ---------- RWKV ---------- */
+/* The RWKV-Curve model runs in a worker (rwkv.js, a port of the MIT reference in JSchoreels/anki-rwkv).
+   Its weights come from a pinned commit of the Anki fork; personal use only, so they are fetched, never
+   committed here. It reads the whole log, then each new answer, and returns each card's forgetting curve
+   and its prediction before every answer. Seed entries are skipped by the worker. */
+const RWKV_SIZES = { small: "Small", tiny: "Tiny" };
+const rwkv = {
+  worker: null, ready: false, pending: [], curves: null, preds: null, status: "loading…", info: "",
+  describe() { return [this.info, this.status === "ready" ? "" : this.status].filter(Boolean).join(" · "); },
+};
+function rwkvPost(type, entries) {
+  rwkv.pending.push(type);
+  rwkv.worker.postMessage({ type, [type === "replay" ? "log" : "entries"]: entries,
+    dayStartHour: DAY_STARTS_AT, tzOffsetMinutes: -new Date().getTimezoneOffset() });
+}
+function rwkvReplay() {
+  if (!rwkv.ready) return;   /* the first replay happens when the model is ready */
+  rwkv.preds = null;
+  rwkvPost("replay", S.revlog);
+}
+function rwkvAppend(entries) {
+  if (rwkv.ready) rwkvPost("append", entries);
+}
+function startRwkv() {
+  if (rwkv.worker || typeof Worker === "undefined") return;
+  const worker = rwkv.worker = new Worker("rwkv.js");
+  worker.onmessage = e => {
+    const m = e.data;
+    if (m.type === "ready") {
+      rwkv.ready = true;
+      rwkv.info = RWKV_SIZES[m.size] + " · " + Math.round(m.bytes / 1024) + " KB";
+      rwkv.status = "reading your history…";
+      rwkvReplay();
+    } else if (m.type === "curves") {
+      const kind = rwkv.pending.shift(), first = !rwkv.curves;
+      if (kind === "replay") { rwkv.curves = m.curves; rwkv.preds = m.preds; }
+      else if (rwkv.preds) { Object.assign(rwkv.curves, m.curves); rwkv.preds.push(...m.preds); }
+      if (first) {
+        rwkv.status = "ready";
+        console.info("rwkv: " + S.revlog.length + " answers read in " + Math.round(m.ms) + " ms");
+        if (location.hash === "#memory") render();
+      }
+    } else if (m.type === "error") {
+      rwkv.pending.shift();
+      rwkv.status = "unavailable: " + m.message;
+      console.warn("rwkv:", m.message);
+      if (location.hash === "#memory") render();
+    }
+  };
+  worker.postMessage({ type: "init", size: S.rwkvSize in RWKV_SIZES ? S.rwkvSize : "small" });
+}
+/* A card's recall at a time, and when it falls to the target, from the curve the worker returned:
+   { w, s, d: a mixture of three power curves, at: the last answer }. */
+function rwkvRecall(p, nowSeconds) {
+  const t = Math.max(nowSeconds - p.at, 1);
+  let r = 0;
+  for (let i = 0; i < p.w.length; i++) r += p.w[i] * Math.exp(-p.d[i] * Math.log1p(t / (1e-7 + p.s[i])));
+  const raw = 1e-5 + (1 - 2e-5) * r;
+  return 1 / (1 + Math.exp(-(Math.log(raw / (1 - raw)) + 1e-5)));
+}
+function rwkvDue(p, target) {
+  const MAX = 100 * 365 * 86400, R = t => rwkvRecall(p, p.at + t);
+  if (R(1) <= target) return p.at + 1;
+  let lo = 1, hi = 2;
+  while (hi < MAX && R(hi) > target) { lo = hi; hi *= 2; }
+  if (hi >= MAX) { hi = MAX; if (R(hi) > target) return p.at + MAX; }
+  for (let i = 0; i < 60 && hi - lo > 1; i++) {
+    const mid = Math.sqrt(lo * hi);
+    if (R(mid) > target) lo = mid; else hi = mid;
+  }
+  return p.at + Math.ceil(hi);
+}
+
+/* A week's words move into the review queue when the week is over. Words from weeks before the log
+   existed get one seed answer per card at the week's end: Good if their last review passed, else Again. */
+function enrollPast() {
+  const known = memory().cards;
+  let seeded = false;
+  for (const week of S.weeks) {
+    const end = addDays(week.start, STAGES.length), t = Math.min(nowSeconds(), Math.floor(new Date(end + "T12:00").getTime() / 1000));
+    for (const id of week.ids) {
+      if (S.srs[id] || !BY_ID.has(id)) continue;
+      S.srs[id] = end;
+      const r = S.results[id];
+      for (const card of [RECOGNITION, PRODUCTION]) {
+        if (known.has(cardKey(id, card))) continue;
+        S.revlog.push([t, id, card, r && r.last ? 3 : 1, 0, 1]);
+        seeded = true;
+      }
+    }
+  }
+  if (seeded) { S.revlog.sort((a, b) => a[0] - b[0]); memo = null; rwkvReplay(); }
+}
+/* Cards known only from seed answers are the backlog from before the log: at most this many a day. */
+const BACKLOG_PER_DAY = 20;
+function dueToday() {
+  const today = currentDay(), now = nowSeconds(), out = [], backlog = [], cards = memory().cards;
+  for (const id of Object.keys(S.srs)) {
+    if (!BY_ID.has(id) || (S.week && S.week.ids.includes(id))) continue;   /* a restarted week's words review as stages */
+    /* One card per word a day, as Anki buries siblings: the one less likely to be remembered. */
+    const due = [RECOGNITION, PRODUCTION].map(card => cardKey(id, card))
+      .filter(key => { const day = dueDayOf(key); return day && day <= today; })
+      .map(key => [key, recallOf(key, now)]).sort((a, b) => a[1] - b[1]);
+    if (!due.length) continue;
+    (cards.get(due[0][0]).history.every(h => h[3]) ? backlog : out).push(due[0]);
+  }
+  backlog.sort((a, b) => a[1] - b[1]);
+  return out.concat(backlog.slice(0, BACKLOG_PER_DAY))
+    .sort((a, b) => a[1] - b[1]).map(([key]) => key);   /* least likely to be remembered first */
 }
 
 /* ---------- helpers ---------- */
@@ -830,14 +1111,21 @@ function mainMode() {
     undo = null;
     save();
   }
+  enrollPast();
+  if (!S.srsDay || S.srsDay.date !== today) {
+    const queue = dueToday();
+    S.srsDay = { date: today, queue, missed: [], cleared: [], round: 1, total: queue.length };
+    save();
+  }
+  const reviews = S.srsDay.queue.length || S.srsDay.missed.length ? "srs" : "done";
   if (!S.week.ready) return "diag";
   const stage = daysBetween(S.week.madeOn || S.week.start, today) - 1;
-  if (stage < 0) return "done";
+  if (stage < 0) return reviews;
   if (!S.day || S.day.date !== today) {
     S.day = { date: today, stage, queue: shuffle(S.week.ids), missed: [], cleared: [], round: 1 };
     save();
   }
-  return S.day.queue.length || S.day.missed.length ? "review" : "done";
+  return S.day.queue.length || S.day.missed.length ? "review" : reviews;
 }
 let renderedOn = null;   /* the day the visible view was built for */
 /* One line when a slightly smaller size allows it; otherwise the CSS balances the lines. */
@@ -856,8 +1144,10 @@ function fitLine(node) {
 const fitAll = () => app.querySelectorAll(".pane .hero").forEach(fitLine);
 addEventListener("resize", fitAll);
 document.fonts.addEventListener("loadingdone", fitAll);
+let sessionMode = null;   /* what the visible card belongs to: "review", "srs" or "practice" */
 function render() {
   renderedOn = currentDay();
+  shownAt = Date.now();
   keys = null;
   touch = null;
   lookup = null;
@@ -870,40 +1160,52 @@ function render() {
   applyTheme();
   document.getElementById("label").title = "";
   const wantList = location.hash === "#week", wantListen = location.hash === "#listen", wantPractice = location.hash === "#practice";
-  document.body.classList.toggle("listing", wantList || wantListen || wantPractice);
-  document.body.classList.toggle("weekList", wantList);
+  const wantMemory = location.hash === "#memory";
+  document.body.classList.toggle("listing", wantList || wantListen || wantPractice || wantMemory);
+  document.body.classList.toggle("weekList", wantList || wantMemory);
   const mode = mainMode();
   updateCount(mode);
   app.replaceChildren();
+  sessionMode = wantPractice && S.practice ? "practice" : mode;
   if (wantList) return renderWeek();
+  if (wantMemory) return renderMemory();
   if (wantListen) renderListen();
   else if (peek !== null) renderPeek();
   else if (wantPractice) renderPractice();
   else if (mode === "diag") renderDiag();
-  else if (mode === "review") renderCard();
+  else if (mode === "review" || mode === "srs") renderCard();
   else renderDone();
   fitAll();
 }
 function updateCount(mode) {
   const count = document.getElementById("count");
   const label = document.getElementById("label");
-  let done, total, past = false;
+  /* [done, total, class] per segment of the hairline; the count is what's left. */
+  let segs = [], text = "";
+  const left = list => list.reduce((n, [done, total]) => n + total - done, 0);
   if (inPractice()) {
     const p = S.practice;
-    count.textContent = p.stage === null ? "" : p.cleared.length + "/" + p.ids.length;   /* listening isn't scored */
-    count.classList.remove("past");
-    document.getElementById("skipped").textContent = label.textContent = "";
-    return;
+    if (p.stage !== null) segs = [[p.cleared.length, p.ids.length, ""]];   /* listening isn't scored */
+    text = segs.length ? String(left(segs)) : "";
+  } else if (mode === "diag") {
+    segs = [[S.week.ids.length, WEEK_SIZE, ""]];
+    text = S.week.ids.length + "/" + WEEK_SIZE;
+  } else {
+    const today = currentDay(), d = S.day && S.day.date === today && S.week.ready ? S.day : null;
+    if (d) segs.push([d.cleared.length, S.week.ids.length, ""]);
+    if (S.srsDay && S.srsDay.total) segs.push([S.srsDay.cleared.length, S.srsDay.total, "srs"]);
+    text = segs.length ? String(left(segs)) : "";
   }
-  const today = S.day && S.day.date === currentDay() ? S.day : null;
-  if (mode === "diag") { done = S.week.ids.length; total = WEEK_SIZE; }
-  else if (today) { done = today.cleared.length; total = S.week.ids.length; }   /* 0/100 from the start, not the last session's score */
-  else if (S.last) { done = S.last.done; total = S.last.total; past = mode !== "done"; }
-  else { done = 0; total = S.week.ids.length; }
-  count.textContent = done + "/" + total;
-  count.classList.toggle("past", past);
+  count.textContent = text;
+  count.classList.remove("past");
+  document.getElementById("hair").replaceChildren(...segs.filter(([, total]) => total > 0).map(([done, total, cls]) =>
+    el("span", { class: "seg " + cls, style: "flex: " + total }, el("span", { style: "width: " + Math.min(100, 100 * done / total) + "%" }))));
   document.getElementById("skipped").textContent = mode === "diag" ? (S.week.skipped || 0) + " skipped" : "";
-  label.textContent = mode === "diag" ? "Diagnostic" : mode === "review" ? STAGES[S.day.stage].label : "";
+  if (inPractice()) label.textContent = "";
+  else if (mode === "srs") {
+    const next = S.srsDay.queue[0] || "";
+    label.textContent = "Review · " + (splitKey(next).card === PRODUCTION ? "Production" : "Recognition");
+  } else label.textContent = mode === "diag" ? "Diagnostic" : mode === "review" ? STAGES[S.day.stage].label : "";
 }
 
 /* ---------- history (view only) ---------- */
@@ -948,6 +1250,7 @@ function finishDiag() {
 function answerDiag(w, status) {
   S.status[w.id] = status;
   remember(w.id);
+  if (status === "w") logAnswer(w.id, RECOGNITION, 1);   /* not known: the card's first answer */
   if (status === "w") S.week.ids.push(w.id);
   else S.week.skipped = (S.week.skipped || 0) + 1;
   undo = w.id;
@@ -958,6 +1261,8 @@ function answerDiag(w, status) {
 function undoDiag() {
   if (!undo) return;
   if (S.status[undo] === "s") S.week.skipped--;
+  const lastAnswer = S.revlog[S.revlog.length - 1];
+  if (S.status[undo] === "w" && lastAnswer && lastAnswer[1] === undo) { S.revlog.pop(); memo = null; rwkvReplay(); }
   if (S.history[S.history.length - 1] === undo) {
     S.history.pop();
     const today = currentDay();
@@ -1033,12 +1338,17 @@ function action(text, key, handler, keyName) {
 /* ---------- daily review ---------- */
 /* The daily review, or a practice session: same cards, same scoring. */
 const inPractice = () => location.hash === "#practice" && !!S.practice;
-const session = () => inPractice() ? S.practice : S.day;
-function grade(w, correct) {
-  const d = session();
-  d.queue.shift();
-  (correct ? d.cleared : d.missed).push(w.id);
+const session = () => sessionMode === "practice" ? S.practice : sessionMode === "srs" ? S.srsDay : S.day;
+/* Which stage shows a queue item: a review card's own format, else the session's stage. */
+function itemStage(d, item) {
+  const { card } = splitKey(item);
+  return card === null ? d.stage : card === PRODUCTION ? 5 : 3;
+}
+function grade(w, rating) {
+  const d = session(), item = d.queue.shift(), correct = rating > 1;
+  (correct ? d.cleared : d.missed).push(item);
   if (!correct && d.slipped && !d.slipped.includes(w.id)) d.slipped.push(w.id);
+  logAnswer(w.id, STAGES[itemStage(d, item)].kind === "id" ? RECOGNITION : PRODUCTION, rating);
   const result = S.results[w.id] || (S.results[w.id] = { passed: 0, total: 0, last: false });
   result.passed += correct ? 1 : 0;
   result.total++;
@@ -1056,21 +1366,24 @@ function grade(w, correct) {
 }
 function prefetch(stage) {
   if (!stage.context) return;
-  session().queue.slice(0, 2).forEach(id => {
+  session().queue.slice(0, 2).map(item => splitKey(item).id).forEach(id => {
     if (!sentences.has(id)) sentences.set(id, fetchSentences(BY_ID.get(id), 1).catch(() => []));
   });
 }
 function renderCard() {
-  const d = session(), stage = STAGES[d.stage], w = BY_ID.get(d.queue[0]);
+  const d = session(), item = d.queue[0], stage = STAGES[itemStage(d, item)], w = BY_ID.get(splitKey(item).id);
   if (!w) { d.queue.shift(); save(); return render(); }
   prefetch(stage);
-  if (!stage.context) warmStrokes(BY_ID.get(d.queue[1]));
-  const note = d.round > 1 ? "Missed words · " + d.queue.length + " left" : "";
-  if (stage.kind === "id") renderRecognition(w, stage, note);
+  if (!stage.context && d.queue[1]) warmStrokes(BY_ID.get(splitKey(d.queue[1]).id));
+  const { card } = splitKey(item), m = card !== null && memory().cards.get(item);
+  const seen = m && !m.history[m.history.length - 1][3] ? daysBetween(dayOfSeconds(m.last), currentDay()) : null;
+  const note = d.round > 1 ? "Missed words · " + d.queue.length + " left"
+    : seen === null ? "" : seen === 0 ? "seen earlier today" : "seen " + (seen === 1 ? "yesterday" : seen + " days ago");
+  if (stage.kind === "id") renderRecognition(w, stage, note, card === null ? null : item);
   else if (stage.kind === "choice") renderChoice(w, note);
   else renderType(w, note);
 }
-function renderRecognition(w, stage, note) {
+function renderRecognition(w, stage, note, key) {
   const token = (renderRecognition.token = {});
   const front = el("div", { class: heroClass(w.word) + (stage.furigana ? "" : " hidekey"), lang: "ja" }, linkedWord(w, true));
   lookup = w;
@@ -1084,9 +1397,15 @@ function renderRecognition(w, stage, note) {
   /* Swipes turn pages, as in listening: finger left is got it (next), finger right goes back a card.
      Down shows the answer, up hides it again. A tap repeats.
      With the answer up, Got it and Missed stay on screen in zen too: Missed has no swipe. */
-  const gestures = touch = { left: () => grade(w, true), right: () => stepHistory(-1), down: () => reveal(), up: () => conceal(), tap: speak };
+  /* A left swipe grades by how far it goes: Hard, Good (the usual flick) or Easy. Missed stays a button. */
+  const strength = dx => { const f = -dx / innerWidth; return f < 0.25 ? 2 : f < 0.55 ? 3 : 4; };
+  const gestures = touch = { left: dx => grade(w, dx ? strength(dx) : 3), right: () => stepHistory(-1), down: () => reveal(), up: () => conceal(), tap: speak,
+    strength: dx => { const g = strength(dx), n = key && nextInterval(key, g); return { g, next: n ? "next in " + inDays(n) : "" }; } };
+  /* Hard · easy sit under Got it; on the front the row is kept empty so nothing moves. */
+  const extra = () => [el("span"), el("div", { class: "grades" },
+    action("hard", "2", () => grade(w, 2)), "·", action("easy", "4", () => grade(w, 4))), el("span")];
   const showFront = () => {
-    buttons.replaceChildren(action("Show", " ", reveal, "space"), action("Got it", "j", () => grade(w, true)), el("span"));
+    buttons.replaceChildren(action("Show", " ", reveal, "space"), action("Got it", "j", () => grade(w, 3)), el("span"));
     if (aux) { info.before(aux); gestures.word = cheat; }   /* tapping the key word peeks at its furigana */
   };
   const reveal = () => {
@@ -1099,8 +1418,9 @@ function renderRecognition(w, stage, note) {
       ...(sentence ? [sentenceEnglish(sentence)] : []));
     buttons.replaceChildren(
       action("Repeat", "r", speak),
-      stay(action("Got it", "j", () => grade(w, true))),
-      stay(action("Missed", "k", () => grade(w, false))));
+      action("Got it", "j", () => grade(w, 3)),
+      stay(action("Missed", "k", () => grade(w, 1))),
+      ...extra());
     if (aux) aux.remove();
     announce();
   };
@@ -1112,14 +1432,15 @@ function renderRecognition(w, stage, note) {
   };
   keys = e => {
     if (e.key === " " || e.key === "Enter") reveal();
-    else if (e.key === "j") grade(w, true);   /* no need to reveal a word you're sure of */
-    else if (shown && e.key === "k") grade(w, false);
+    else if (e.key === "j") grade(w, 3);   /* no need to reveal a word you're sure of */
+    else if (shown && e.key === "k") grade(w, 1);
+    else if (/^[1-4]$/.test(e.key) && (shown || e.key !== "1")) grade(w, +e.key);
     else if (aux && !shown && e.key === "f") cheat();
     else return false;
   };
   const info = el("span", null, note);
   showFront();
-  app.append(card(front, answer, buttons, el("div", { class: "note" }, aux, info)));
+  app.append(card(front, answer, buttons, el("div", { class: "note" }, aux, info), "rec"));
   if (!stage.context) showStrokes(front);
   else {
     front.style.visibility = "hidden";
@@ -1166,9 +1487,9 @@ function renderChoice(w, note) {
       if (options[i] === w) b.classList.add("right");
     });
     if (!correct) node.classList.add("wrong");
-    buttons.replaceChildren(action("Next", "Enter", () => grade(w, correct), "enter"));
-    keys = e => { if (e.key === "Enter" || e.key === " ") grade(w, correct); else return false; };
-    const next = () => grade(w, correct);
+    buttons.replaceChildren(action("Next", "Enter", () => grade(w, correct ? 3 : 1), "enter"));
+    keys = e => { if (e.key === "Enter" || e.key === " ") grade(w, correct ? 3 : 1); else return false; };
+    const next = () => grade(w, correct ? 3 : 1);
     touch = { left: next, right: next, up: speak, down: () => stepHistory(-1), tap: next };
     lookup = w;
     info.replaceChildren(el("span", { lang: "ja" }, linkedWord(w, false), " ", w.kana));
@@ -1204,9 +1525,9 @@ function renderType(w, note) {
     showStrokes(hero);
     lookup = w;
     announce();
-    buttons.replaceChildren(action("Next", "Enter", () => grade(w, correct), "enter"));
-    keys = e => { if (e.key === "Enter") grade(w, correct); else return false; };
-    const next = () => grade(w, correct);
+    buttons.replaceChildren(action("Next", "Enter", () => grade(w, correct ? 3 : 1), "enter"));
+    keys = e => { if (e.key === "Enter") grade(w, correct ? 3 : 1); else return false; };
+    const next = () => grade(w, correct ? 3 : 1);
     touch = { left: next, right: next, up: speak, down: () => stepHistory(-1), tap: next };
   };
   input.addEventListener("keydown", e => {
@@ -1335,6 +1656,14 @@ function restartWeek(week) {
   location.hash = "";
 }
 function reviewStatus(w) {
+  if (S.srs[w.id] && !S.week.ids.includes(w.id)) {
+    const days = [RECOGNITION, PRODUCTION].map(card => dueDayOf(cardKey(w.id, card))).filter(Boolean).sort();
+    if (days.length) {
+      const n = daysBetween(currentDay(), days[0]);
+      return el("span", { class: "st", title: "Next review " + shortDate(days[0]) },
+        n <= 0 ? el("span", { class: "fail" }, "due") : "in " + n + " d");
+    }
+  }
   const r = S.results[w.id];
   if (!r) return el("span", { class: "st" });
   return el("span", { class: "st", title: r.passed + " of " + r.total + " reviews passed" }, r.passed + "/" + r.total + " ",
@@ -1350,7 +1679,9 @@ function renderWeek() {
   const index = viewedWeek === null ? weeks.length - 1 : viewedWeek;
   const week = weeks[index];
   const ids = week ? week.ids : [];
+  const due = S.srsDay ? S.srsDay.queue.length + S.srsDay.missed.length : 0;
   const list = el("div", { class: "list" }, renderHeatmap(),
+    el("a", { class: "memlink", href: "#memory" }, "Memory · " + (due ? due + " to review today" : "nothing due today") + " →"),
     el("div", { class: "weeknav" },
       el("button", { ariaLabel: "Previous week", disabled: index <= 0, onclick: () => stepWeek(-1) }, "←"),
       el("h1", null, !week ? "No words yet" : week === S.week ? "This week" : "Week of " + shortDate(week.start)),
@@ -1388,7 +1719,8 @@ function renderWeek() {
       const big = el("div", { class: "panelword" + (w.word.length > 5 ? " long" : ""), lang: "ja" }, linkedWord(w, false));
       const panel = el("div", { class: "more" }, big,
         el("div", { class: "reading", lang: "ja" }, look("look", wordUrl(w), w.kana)),
-        el("div", { class: "empty" }, "N" + w.level + (w.rank ? " · frequency #" + w.rank : "")));
+        el("div", { class: "empty" }, "N" + w.level + (w.rank ? " · frequency #" + w.rank : "")),
+        memoryPanel(w));
       const status = el("p", { class: "empty" }, "Loading examples…");
       panel.append(status);
       row.after(panel);
@@ -1555,6 +1887,148 @@ function renderListen() {
   app.append(view);
   say(s.text);
   if (cards[at + 1]) aivis(cards[at + 1].s.text);   /* ready before → is pressed */
+}
+
+/* ---------- memory: a word's recall, and the memory page ---------- */
+const SVG = "http://www.w3.org/2000/svg";
+function svgEl(tag, attrs, ...kids) {
+  const node = document.createElementNS(SVG, tag);
+  Object.entries(attrs || {}).forEach(([k, v]) => node.setAttribute(k, v));
+  node.append(...kids);
+  return node;
+}
+/* Recall over time for one card: FSRS's curve between answers, a dot per answer (Again in red,
+   seeds hollow), the target as a dotted line and now as a red rule; past now the curve is dashed. */
+function recallChart(key) {
+  const m = memory().cards.get(key);
+  if (!m) return null;
+  const W = 300, H = 92, now = nowSeconds(), h = m.history, t0 = h[0][0];
+  const end = Math.max(now, t0 + 86400) + Math.max(86400 * 2, (now - t0) * 0.15);
+  const x = t => ((t - t0) / (end - t0) * W).toFixed(1);
+  const y = r => (6 + (1 - Math.max(0.4, r)) / 0.6 * 78).toFixed(1);
+  const past = [], ahead = [];
+  h.forEach(([t, , s], i) => {
+    const stop = i + 1 < h.length ? h[i + 1][0] : end;
+    for (let k = 0; k <= 16; k++) {
+      const at = t + (stop - t) * k / 16, point = x(at) + "," + y(fsrs.recall((at - t) / 86400, s));
+      if (at <= now) past.push((k ? "L" : "M") + point);
+      else { if (!ahead.length) ahead.push("M" + x(now) + "," + y(fsrs.recall((now - t) / 86400, s))); ahead.push("L" + point); }
+    }
+  });
+  const dots = h.slice(1).map(([t, g, , seed], i) => svgEl("circle", { cx: x(t), cy: y(fsrs.recall((t - h[i][0]) / 86400, h[i][2])), r: 3.5,
+    class: "dot" + (seed ? " seed" : g === 1 ? " g1" : "") }));
+  const first = svgEl("circle", { cx: x(t0), cy: y(1), r: 3.5, class: "dot" + (h[0][3] ? " seed" : h[0][1] === 1 ? " g1" : "") });
+  const label = shortDate(dayOfSeconds(t0));
+  return svgEl("svg", { viewBox: "0 0 " + W + " " + (H + 6), role: "img",
+    "aria-label": "Recall of the recognition card since " + label + ": " + h.length + " answers; now " + Math.round(100 * recallOf(key, now)) + "%" },
+    svgEl("line", { x1: 0, x2: W, y1: y(S.target), y2: y(S.target), class: "target" }),
+    svgEl("text", { x: W, y: +y(S.target) - 4, "text-anchor": "end" }, "target " + Math.round(S.target * 100) + "%"),
+    svgEl("path", { d: past.join(""), class: "curve" }),
+    ahead.length ? svgEl("path", { d: ahead.join(""), class: "curve ahead" }) : "",
+    svgEl("line", { x1: x(now), x2: x(now), y1: 0, y2: H - 6, class: "nowline" }),
+    first, ...dots,
+    svgEl("text", { x: 0, y: H + 4 }, label),
+    svgEl("text", { x: x(now), y: H + 4, "text-anchor": "middle", fill: "var(--accent)" }, "now"));
+}
+function memoryPanel(w) {
+  const cards = memory().cards, keys = [RECOGNITION, PRODUCTION].map(card => cardKey(w.id, card));
+  if (!keys.some(k => cards.has(k))) return null;
+  const today = currentDay(), enrolled = S.srs[w.id] && !S.week.ids.includes(w.id);
+  const line = (name, key) => {
+    const m = cards.get(key);
+    if (!m) return null;
+    const real = m.history.filter(h => !h[3]).length, due = enrolled && dueDayOf(key);
+    return el("div", null, name + " · " + Math.round(100 * recallOf(key)) + "% · " + real + (real === 1 ? " answer" : " answers")
+      + (m.lapses ? " · " + m.lapses + (m.lapses === 1 ? " lapse" : " lapses") : "") + " · stability " + inDays(Math.max(1, Math.round(m.s)))
+      + (due ? " · " + (due <= today ? "due" : "next " + shortDate(due)) : ""));
+  };
+  const rec = keys[0], r = cards.has(rec) && recallOf(rec), due = enrolled && dueDayOf(rec);
+  return el("div", { class: "mem" },
+    r === false ? null : el("div", { class: "now" }, el("span", null, "Recall now " + Math.round(100 * r) + "%"),
+      due ? el("span", { class: due <= today ? "due" : "empty" }, due <= today ? "due today" : "next " + shortDate(due))
+        : el("span", { class: "empty" }, "in this week's stages")),
+    recallChart(rec),
+    el("div", { class: "cards" }, line("Recognition", keys[0]), line("Production", keys[1])));
+}
+/* Log loss and calibration of each model's predictions on the real answers of the last 30 days. */
+function scoreModels() {
+  const since = nowSeconds() - 30 * 86400, { preds } = memory(), out = {};
+  const models = { fsrs: preds, rwkv: rwkv.preds && rwkv.preds.length === S.revlog.length ? rwkv.preds : null };
+  for (const [name, list] of Object.entries(models)) {
+    if (!list) continue;
+    let n = 0, loss = 0, predicted = 0, passed = 0;
+    S.revlog.forEach(([t, , , g, , seed], i) => {
+      const p = list[i];
+      if (seed || t < since || p === null || p === undefined) return;
+      const q = Math.min(1 - 1e-4, Math.max(1e-4, p)), ok = g > 1;
+      n++; predicted += p; passed += ok;
+      loss -= ok ? Math.log(q) : Math.log(1 - q);
+    });
+    if (n) out[name] = { n, loss: loss / n, predicted: predicted / n, actual: passed / n };
+  }
+  return out;
+}
+function renderMemory() {
+  document.getElementById("label").replaceChildren(backLink("Back"));
+  const today = currentDay(), counts = Array(7).fill(0);
+  for (const id of Object.keys(S.srs)) {
+    if (!BY_ID.has(id) || S.week.ids.includes(id)) continue;
+    for (const card of [RECOGNITION, PRODUCTION]) {
+      const day = dueDayOf(cardKey(id, card));
+      if (!day) continue;
+      const n = Math.max(0, daysBetween(today, day));
+      if (n < 7) counts[n]++;
+    }
+  }
+  if (S.srsDay && S.srsDay.date === today) counts[0] = S.srsDay.queue.length + S.srsDay.missed.length;   /* what's left today */
+  /* The backlog not in today's queue arrives BACKLOG_PER_DAY a day. */
+  const queued = new Set(S.srsDay ? S.srsDay.queue.concat(S.srsDay.missed, S.srsDay.cleared).map(k => splitKey(k).id) : []);
+  let waiting = Object.keys(S.srs).filter(id => BY_ID.has(id) && !queued.has(id) && !S.week.ids.includes(id)
+    && [RECOGNITION, PRODUCTION].some(card => { const key = cardKey(id, card), m = memory().cards.get(key), day = dueDayOf(key);
+      return m && m.history.every(h => h[3]) && day && day <= today; })).length;
+  for (let i = 1; i < 7 && waiting > 0; i++) { const n = Math.min(BACKLOG_PER_DAY, waiting); counts[i] += n; waiting -= n; }
+  const top = Math.max(1, ...counts);
+  const names = counts.map((_, i) => i ? new Date(addDays(today, i) + "T12:00").toLocaleDateString("en-US", { weekday: "short" }) : "today");
+  const scores = scoreModels(), worst = Math.max(0.01, ...Object.values(scores).map(x => x.loss));
+  const shown = scores[S.sched] || scores.fsrs;
+  const lossRow = (name, label) => {
+    const x = scores[name];
+    return [el("span", null, label),
+      el("span", { class: "track" }, x ? el("i", { style: "width: " + (100 * x.loss / worst).toFixed(0) + "%" + (name === "fsrs" ? "; background: var(--dim)" : "") }) : null),
+      el("span", { class: "n" }, x ? "loss " + x.loss.toFixed(3) : name === "rwkv" && rwkv.status !== "ready" ? rwkv.status : "no data yet")];
+  };
+  const pick = sched => { S.sched = sched; S.srsDay = null; save(); render(); };   /* today's queue is rebuilt by the new scheduler */
+  const setTarget = by => { S.target = Math.round(Math.min(0.97, Math.max(0.75, S.target + by)) * 100) / 100; S.srsDay = null; save(); render(); };
+  app.append(el("div", { class: "stats" },
+    el("section", null, el("h2", null, "Coming up"),
+      el("div", { class: "bars", role: "img", ariaLabel: "Reviews due over the next 7 days: " + counts.join(", ") },
+        counts.map(n => el("div", null, String(n), el("i", { style: "height: " + (n / top * 84).toFixed(0) + "px" })))),
+      el("div", { class: "days" }, names.map(n => el("span", null, n)))),
+    el("section", null, el("h2", null, "How well it predicts you"),
+      shown ? el("div", null, "Predicted " + Math.round(100 * shown.predicted) + "% · you got " + Math.round(100 * shown.actual) + "%")
+        : el("div", { class: "sub" }, "Not enough answers yet."),
+      shown ? el("div", { class: "sub" }, "last 30 days · " + shown.n + " answers") : null,
+      el("div", { class: "loss" }, lossRow("rwkv", "RWKV"), lossRow("fsrs", "FSRS-6")),
+      el("div", { class: "sub" }, "Shorter is better. Both models predict every answer; only one schedules.")),
+    el("section", null, el("h2", null, "Scheduler"),
+      el("div", { class: "seg2", role: "radiogroup", ariaLabel: "Scheduler" },
+        el("button", { role: "radio", ariaChecked: String(S.sched === "fsrs"), onclick: () => pick("fsrs") }, "FSRS-6"),
+        el("button", { role: "radio", ariaChecked: String(S.sched === "rwkv"), disabled: !rwkv.curves, onclick: () => pick("rwkv") }, "RWKV-Curve")),
+      el("div", { class: "setting" }, el("span", null, "Target recall"),
+        el("span", { class: "step" },
+          el("button", { ariaLabel: "Lower target", onclick: () => setTarget(-0.01) }, "−"),
+          el("span", null, Math.round(S.target * 100) + "%"),
+          el("button", { ariaLabel: "Raise target", onclick: () => setTarget(0.01) }, "+"))),
+      el("div", { class: "setting" }, el("span", null, "Model"),
+        el("button", { class: "sub", title: "Switch between the Small and Tiny RWKV models", onclick: () => {
+          S.rwkvSize = (S.rwkvSize || "small") === "small" ? "tiny" : "small";
+          save();
+          if (rwkv.worker) rwkv.worker.terminate();
+          Object.assign(rwkv, { worker: null, ready: false, pending: [], curves: null, preds: null, status: "loading…", info: "" });
+          startRwkv();
+          render();
+        } }, rwkv.describe())))));
+  keys = e => { if (e.key === "Escape") location.hash = "#week"; else return false; };
 }
 
 /* ---------- practice ---------- */
@@ -1792,7 +2266,18 @@ const SWIPE_MIN = 50, SWIPE_MS = 700, EDGE = 24;
 let lastPointer = "mouse", swipe = null;
 addEventListener("pointerdown", e => { lastPointer = e.pointerType; }, { capture: true, passive: true });
 const swipeCard = () => app.querySelector("main");
+function showStrength(dx) {
+  const box = document.getElementById("strength");
+  if (dx === null || !touch || !touch.strength || dx > -SWIPE_MIN) { box.hidden = true; return; }
+  const { g, next } = touch.strength(dx);
+  box.replaceChildren(
+    el("div", { class: "what" }, el("span", { class: "name g" + g }, GRADES[g]), el("span", { class: "next" }, next)),
+    el("div", { class: "meter g" + g }, [2, 3, 4].map(n => el("span", { class: n <= g ? "on" : "" }))),
+    el("div", { class: "names" }, el("span", null, "hard"), el("span", null, "good"), el("span", null, "easy")));
+  box.hidden = false;
+}
 function dropSwipe(settle) {
+  showStrength(null);
   const card = swipe && swipe.card;
   swipe = null;
   if (!card || !card.isConnected) return;
@@ -1817,8 +2302,10 @@ app.addEventListener("touchmove", e => {
     swipe.card.classList.add("dragging");
     swipe.card.style.transform = "translateX(" + dx * 0.5 + "px)";
     swipe.card.style.opacity = Math.max(0.4, 1 - Math.abs(dx) / 500);
+    showStrength(dx);
   } else if (swipe.card.style.transform) {
     swipe.card.style.transform = swipe.card.style.opacity = "";
+    showStrength(null);
   }
 }, { passive: true });
 app.addEventListener("touchend", e => {
@@ -1828,9 +2315,10 @@ app.addEventListener("touchend", e => {
   let dir = null;
   if (Math.abs(dx) >= SWIPE_MIN && Math.abs(dx) > 1.5 * Math.abs(dy)) dir = dx > 0 ? "right" : "left";
   else if (still && Math.abs(dy) >= SWIPE_MIN && Math.abs(dy) > 1.5 * Math.abs(dx)) dir = dy > 0 ? "down" : "up";
-  const handler = quick && dir && touch && touch[dir];
+  const graded = dir === "left" && touch && touch.strength;   /* a grading swipe may be slow and deliberate */
+  const handler = (quick || graded) && dir && touch && touch[dir];
   dropSwipe(!handler);
-  if (handler) handler();
+  if (handler) handler(dir === "left" || dir === "right" ? dx : dy);
 }, { passive: true });
 app.addEventListener("touchcancel", () => dropSwipe(true), { passive: true });
 /* A tap anywhere on an unrevealed card reveals it, instead of following the word's Jisho link.
@@ -1925,17 +2413,29 @@ function mergeStates(a, b) {
   for (const w of [...(older.weeks || []), ...(newer.weeks || []), ...weeks])
     if (w && w.ids.length && (!m.week || w.start !== m.week.start)) past.set(w.start, { start: w.start, ids: w.ids });
   m.weeks = [...past.values()].sort(byStart);
+  /* Both logs, each answer once, in order. */
+  const seen = new Set();
+  m.revlog = [...(older.revlog || []), ...(newer.revlog || [])]
+    .filter(e => { const k = e.slice(0, 4).join("\u0000"); return !seen.has(k) && seen.add(k); })
+    .sort((x, y) => x[0] - y[0]);
+  m.srs = { ...older.srs, ...newer.srs };
   const dayProgress = d => d.round * 1e6 + d.cleared.length + d.missed.length;
   const days = [older.day, newer.day].filter(Boolean);
   m.day = days.length === 2 && days[0].date === days[1].date
     ? (dayProgress(days[0]) > dayProgress(days[1]) ? days[0] : days[1])
     : days.sort((x, y) => x.date < y.date ? -1 : 1).pop() || null;
+  const reviewDays = [older.srsDay, newer.srsDay].filter(Boolean);
+  m.srsDay = reviewDays.length === 2 && reviewDays[0].date === reviewDays[1].date
+    ? (dayProgress(reviewDays[0]) > dayProgress(reviewDays[1]) ? reviewDays[0] : reviewDays[1])
+    : reviewDays.sort((x, y) => x.date < y.date ? -1 : 1).pop() || null;
   return m;
 }
 /* Replace the state in place (S is const) and redraw. */
 function adopt(data, changed) {
   Object.keys(S).forEach(k => delete S[k]);
   Object.assign(S, structuredClone(DEFAULTS), data);
+  memo = null;
+  rwkvReplay();
   if (changed) S.savedAt = Date.now();
   try { localStorage.setItem(STORE_KEY, JSON.stringify(S)); } catch {}
   paintChrome();
@@ -2057,6 +2557,7 @@ document.addEventListener("keydown", e => {
   else if (e.key === "d") toggleTheme();
   else if (e.key === "a") openListen();
   else if (e.key === "p") openPractice();
+  else if (e.key === "m") location.hash = "#memory";
   else if (e.key === "v") cycleSpeaker();
   else if (e.key === "-") setSpeed(speechSpeed() - 0.1);
   else if (e.key === "=" || e.key === "+") setSpeed(speechSpeed() + 0.1);
@@ -2079,6 +2580,7 @@ new ResizeObserver(measureChrome).observe(document.querySelector("header"));
 new ResizeObserver(measureChrome).observe(document.querySelector("footer"));
 render();
 if (syncCfg) syncNow();
+setTimeout(startRwkv, 1500);   /* after the first card is up */
 /* Installed on a touch device: true fullscreen, bars and all. Android only grants it on a touch, and drops it when
    you leave the app, so ask again on the next touch. (iOS has no fullscreen for pages.) */
 if (matchMedia("(display-mode: standalone), (display-mode: fullscreen), (display-mode: minimal-ui)").matches
