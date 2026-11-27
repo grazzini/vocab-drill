@@ -461,13 +461,13 @@ body.session main { touch-action: none; }   /* the card's own gestures, never a 
 .rail i.now { width: 10px; height: 10px; background: var(--ink); }
 .rail i.next { width: 10px; height: 10px; background: none; box-shadow: inset 0 0 0 2px var(--accent); }
 /* Today */
-.today { width: min(560px, 100%); margin: 0 auto; box-sizing: border-box; min-height: 100dvh; display: flex; flex-direction: column;
+.todaypage { width: min(560px, 100%); margin: 0 auto; box-sizing: border-box; min-height: 100dvh; display: flex; flex-direction: column;
   padding: max(40px, calc(env(safe-area-inset-top) + 24px)) max(24px, env(safe-area-inset-right)) calc(var(--footH, 64px) + 18px) max(24px, env(safe-area-inset-left)); }
-.today .top { display: flex; justify-content: space-between; align-items: flex-start; }
-.today .when { color: var(--dim); font-size: .95rem; }
-.today h1 { font: 400 3.2rem/1.2 var(--ja); margin: 2px 0 10px; }
-@media (max-height: 700px) { .today h1, .words h1 { font-size: 2.5rem; } .trow { padding: 10px 0; } .today { padding-top: max(24px, calc(env(safe-area-inset-top) + 14px)); } }
-.today .dots { min-width: 44px; min-height: 44px; font-size: 1.4rem; letter-spacing: 2px; color: var(--dim); }
+.todaypage .top { display: flex; justify-content: space-between; align-items: flex-start; }
+.todaypage .when { color: var(--dim); font-size: .95rem; }
+.todaypage h1 { font: 400 3.2rem/1.2 var(--ja); margin: 2px 0 10px; }
+@media (max-height: 700px) { .todaypage h1, .words h1 { font-size: 2.5rem; } .trow { padding: 10px 0; } .todaypage { padding-top: max(24px, calc(env(safe-area-inset-top) + 14px)); } }
+.todaypage .dots { min-width: 44px; min-height: 44px; font-size: 1.4rem; letter-spacing: 2px; color: var(--dim); }
 .trow { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2px 12px; padding: 14px 0; border-bottom: 1px solid var(--line); align-items: baseline; width: 100%; text-align: left; }
 .trow .t { font-size: 1.35rem; }
 .trow .n { font-size: 1.2rem; font-variant-numeric: lining-nums tabular-nums; }
@@ -481,8 +481,8 @@ body.session main { touch-action: none; }   /* the card's own gestures, never a 
 .trow.go:hover .t { color: var(--accent); }
 .waiting { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; color: var(--dim); }
 .waiting button { padding: 10px 0; color: var(--ink); border-bottom: 1px solid var(--line); }
-.today .rest { flex-grow: 1; display: flex; align-items: center; justify-content: center; font: 400 2.4rem var(--ja); color: var(--dim); min-height: 2em; }
-.today .start { position: sticky; bottom: calc(var(--footH, 64px) + 12px); }
+.todaypage .rest { flex-grow: 1; display: flex; align-items: center; justify-content: center; font: 400 2.4rem var(--ja); color: var(--dim); min-height: 2em; }
+.todaypage .start { position: sticky; bottom: calc(var(--footH, 64px) + 12px); }
 .start { width: 100%; min-height: 56px; border-radius: 28px; background: var(--ink); color: var(--bg); font-size: 1.25rem; }
 .start.quiet { background: none; color: var(--ink); box-shadow: inset 0 0 0 1px var(--ink); }
 /* Words */
@@ -508,10 +508,10 @@ body.session main { touch-action: none; }   /* the card's own gestures, never a 
 .words .start { margin-top: 22px; }
 .hint { color: var(--dim); font-size: .95rem; display: flex; justify-content: center; gap: 22px; flex-wrap: wrap; }
 @media (orientation: landscape) and (max-height: 540px) {
-  .today, .words { padding-top: 16px; }
-  .today h1, .words h1 { font-size: 2.2rem; margin-bottom: 6px; }
+  .todaypage, .words { padding-top: 16px; }
+  .todaypage h1, .words h1 { font-size: 2.2rem; margin-bottom: 6px; }
   .trow { padding: 8px 0; }
-  .today .rest { display: none; }
+  .todaypage .rest { display: none; }
   .rail { display: none; }
 }
 </style>
@@ -545,7 +545,7 @@ body.session main { touch-action: none; }   /* the card's own gestures, never a 
   <div class="line"><span>Read answers aloud</span><span><button id="voiceBtn"></button> · <button id="speakerBtn" title="AivisSpeech voice (v)" hidden></button> <button id="speedBtnTts" title="Speech speed (- slower, = faster, click to reset)"></button></span></div>
   <div class="line"><span>Buttons on cards</span><button id="zenBtn"></button></div>
   <div class="line"><span>Theme</span><button id="themeBtn"></button></div>
-  <div class="foot"><button id="syncBtn" title="Sync to GitHub (y; Y for settings)">sync</button><span id="build" title="Build of this page">956a36f</span></div>
+  <div class="foot"><button id="syncBtn" title="Sync to GitHub (y; Y for settings)">sync</button><span id="build" title="Build of this page">cc200f6</span></div>
 </dialog>
 <div id="explain" hidden></div>
 
@@ -2257,7 +2257,7 @@ function renderToday(mode) {
   const start = el("button", { class: "start" + (cardsLeft ? "" : " quiet"), onclick: cardsLeft ? startCards : () => { listenIds = null; go("#listen"); } }, startLabel);
   const when = new Date(today + "T12:00").toLocaleDateString("en-US", { weekday: "long" })
     + (stage === null ? " · a new week" : stage < 0 ? " · words picked" : " · week of " + shortDate(w.start) + ", day " + (stage + 1));
-  app.append(el("div", { class: "today" },
+  app.append(el("div", { class: "todaypage" },
     el("div", { class: "top" }, el("div", null, el("div", { class: "when" }, when), el("h1", { lang: "ja" }, "今日")),
       el("button", { class: "dots", ariaLabel: "More", title: "Settings and more", onclick: openSheet }, "···")),
     rows,
